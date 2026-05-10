@@ -29,6 +29,7 @@ Derived metrics
 Anomaly / alert logic
         ↓
 Observability & documentation
+```
 
 ## Status
 
