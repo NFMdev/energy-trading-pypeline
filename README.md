@@ -13,7 +13,6 @@ It focuses on writing Python in a professional way, using a real project structu
 ## Main Flow
 
 ```text
-
 Synthetic energy market data
         ↓
 Ingestion
