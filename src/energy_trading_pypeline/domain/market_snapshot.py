@@ -5,6 +5,7 @@ from uuid import UUID
 
 from energy_trading_pypeline.domain.energy_market_event import EnergyMarketEvent, QualityFlag
 
+
 @dataclass(frozen=True)
 class MarketSnapshot:
     market_area: str
@@ -26,13 +27,13 @@ def calculate_snapshot(event: EnergyMarketEvent) -> MarketSnapshot:
     renewable_actual = event.actual_wind_mw + event.actual_solar_mw
     net_load = event.load_mw - renewable_actual
 
-    imbalance_spread = event.imbalance_price_dkk_mwh - event.elecricity_price_dkk_mwh
+    imbalance_spread = event.imbalance_price_dkk_mwh - event.electricity_price_dkk_mwh
 
     return MarketSnapshot(
         market_area=event.market_area,
         last_event_id=event.event_id,
         last_event_timestamp=event.timestamp,
-        eletricity_price_dkk_mwh=event.elecricity_price_dkk_mwh,
+        eletricity_price_dkk_mwh=event.electricity_price_dkk_mwh,
         imbalance_price_dkk_mwh=event.imbalance_price_dkk_mwh,
         wind_forecast_error_mw=wind_forecast_error,
         solar_forecast_error_mw=solar_forecast_error,

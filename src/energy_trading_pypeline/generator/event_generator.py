@@ -1,39 +1,40 @@
-from datetime import datetime, timezone
-from decimal import Decimal
-from random import uniform
+from datetime import UTC, datetime
+from decimal import ROUND_HALF_UP, Decimal
+from random import choice, uniform
 
 from energy_trading_pypeline.domain.energy_market_event import EnergyMarketEvent
 
-
-MARKET_AREAS = ["DK1", "DK2", "DE", "SE3", "NO2"];
+MARKET_AREAS = ["DK1", "DK2", "DE", "SE3", "NO2"]
+SOURCE_NAME = "energy-generator"
 
 def decimal_from_float(value: float) -> Decimal:
-    return Decimal(str(round(value, 2)))
+    return Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 def generate_energy_market_event() -> EnergyMarketEvent:
     market_area = choice(MARKET_AREAS)
 
-    forecast_wind = uniform(3000, 27500)
-    actual_wind = forecast_wind + uniform(-3000, 3000)
+    forecast_wind_mw = uniform(500, 4_500)
+    actual_wind_mw = max(0, forecast_wind_mw + uniform(-600, 600))
 
-    forecast_solar = uniform(0, 15000)
-    actual_solar = forecast_solar + uniform(-2000, 2000)
+    forecast_solar_mw = uniform(0, 2_500)
+    actual_solar_mw = max(0, forecast_solar_mw + uniform(-350, 350))
 
-    load = uniform(15000, 45000)
+    load_mw = uniform(2_500, 8_500)
 
     electricity_price = uniform(150, 1750)
     imbalance_price = electricity_price + uniform(-600, 1000)
 
     return EnergyMarketEvent(
         market_area=market_area,
-        timestamp=datetime.now(timezone.utc),
-        elecricity_price_dkk_mwh=decimal_from_float(electricity_price),
-        forecast_wind_mw=decimal_from_float(forecast_wind),
-        actual_wind_mw=actual_wind,
-        forecast_solar_mw=forecast_solar,
-        actual_solar_mw=actual_solar,
-        load_mw=load,
-        source="event-generator",
+        timestamp=datetime.now(UTC),
+        electricity_price_dkk_mwh=decimal_from_float(electricity_price),
+        forecast_wind_mw=decimal_from_float(forecast_wind_mw),
+        actual_wind_mw=decimal_from_float(actual_wind_mw),
+        forecast_solar_mw=decimal_from_float(forecast_solar_mw),
+        actual_solar_mw=decimal_from_float(actual_solar_mw),
+        load_mw=decimal_from_float(load_mw),
+        imbalance_price_dkk_mwh=decimal_from_float(imbalance_price),
+        source=SOURCE_NAME,
         quality_flag="OK"
     )
 
