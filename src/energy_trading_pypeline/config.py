@@ -3,7 +3,6 @@ from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 AppEnv = Literal["local", "test", "dev", "prod"]
 
 class Settings(BaseSettings):

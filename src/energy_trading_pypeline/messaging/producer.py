@@ -20,12 +20,12 @@ class EnergyMarketEventProducer:
             {
                 "bootstrap.servers": config.bootstrap_servers,
                 "client.id": config.client_id,
-                "acks": all,
+                "acks": "all",
                 "enable.idempotence": True
             }
         )
 
-    def producer(self, event: EnergyMarketEvent) -> None:
+    def produce(self, event: EnergyMarketEvent) -> None:
         key = event.market_area.encode("utf-8")
         value = serialize_energy_market_event(event)
 
@@ -36,7 +36,7 @@ class EnergyMarketEventProducer:
                 value=value,
                 on_delivery=self._on_delivery,
             )
-            self._producer.poll
+            self._producer.poll(0)
         except BufferError as exc:
             raise RuntimeError("Kafka producer queue is full") from exc
         except KafkaException as exc:

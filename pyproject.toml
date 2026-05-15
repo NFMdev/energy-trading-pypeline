@@ -20,6 +20,7 @@ dependencies = [
 energy-generate = "energy_trading_pypeline.generator.event_generator:main"
 energy-ingest = "energy_trading_pypeline.pipelines.ingest_market_events:main"
 energy-check-db = "energy_trading_pypeline.tools.check_database_connection:main"
+energy-produce = "energy_trading_pypeline.pipelines.produce_synthetic_events:main"
 
 [build-system]
 requires = ["hatchling"]
