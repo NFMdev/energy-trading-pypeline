@@ -1,6 +1,6 @@
 # Energy Trading Pypeline
 
-Energy Trading Pipeline is a Python-based data pipeline laboratory focused on energy market data, trading-related time-series processing, and operational reliability.
+Energy Trading Pypeline is a Python-based data pipeline laboratory focused on energy market data, trading-related time-series processing, and operational reliability.
 
 The goal of this project is to simulate a realistic internal data platform where synthetic energy market events are generated, ingested, validated, stored, transformed, and analyzed to produce derived metrics, anomaly detection, and alert logic.
 
