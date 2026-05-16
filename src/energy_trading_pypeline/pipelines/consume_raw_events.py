@@ -95,7 +95,7 @@ def main() -> None:
                 print(
                     "Invalid event payload. "
                     f"partition={message.partition()}"
-                    f"offset={message.offet()}"
+                    f"offset={message.offset()}"
                     f"error={exc}"
                 )
 
@@ -108,7 +108,7 @@ def main() -> None:
                 print(
                     "Database error while processing message. "
                     f"partition={message.partition()}"
-                    f"offset={message.offet()}"
+                    f"offset={message.offset()}"
                     f"error={exc}"
                 )
 

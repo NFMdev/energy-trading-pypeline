@@ -35,10 +35,11 @@ class RawEnergyMarketEventRepository:
                 validation_error=None,
             )
             .on_conflict_do_nothing(
-                index_elements=("event_id"),
+                index_elements=[raw_energy_market_events.c.event_id],
             )
+            .returning(raw_energy_market_events.c.event_id)
         )
 
-        result = cast(CursorResult[Any], self._session.execute(statement))
+        inserted_id = self._session.execute(statement).scalar_one_or_none()
 
-        return result.rowcount == 1
+        return inserted_id is not None

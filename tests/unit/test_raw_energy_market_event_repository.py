@@ -23,7 +23,7 @@ def create_event() -> EnergyMarketEvent:
 
 def test_save_valid_event_returns_true_when_inserted() -> None:
     session = Mock()
-    session.execute.return_value.rowcount = 1
+    session.execute.return_value.scalar_one_or_none.return_value = 1
 
     repository = RawEnergyMarketEventRepository(session)
 
@@ -34,7 +34,7 @@ def test_save_valid_event_returns_true_when_inserted() -> None:
 def test_save_valid_event_returns_false_when_duplicate() -> None:
     session = Mock()
 
-    session.execute.return_value.rowcount = 0
+    session.execute.return_value.scalar_one_or_none.return_value = None
 
     repository = RawEnergyMarketEventRepository(session)
 
