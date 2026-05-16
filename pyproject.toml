@@ -18,9 +18,9 @@ dependencies = [
 
 [project.scripts]
 energy-generate = "energy_trading_pypeline.generator.event_generator:main"
-energy-ingest = "energy_trading_pypeline.pipelines.ingest_market_events:main"
 energy-check-db = "energy_trading_pypeline.tools.check_database_connection:main"
 energy-produce = "energy_trading_pypeline.pipelines.produce_synthetic_events:main"
+energy-consume = "energy_trading_pypeline.pipelines.consume_raw_events.py:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -51,6 +51,10 @@ select = [
 python_version = "3.12"
 strict = true
 mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = ["confluent_kafka.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
