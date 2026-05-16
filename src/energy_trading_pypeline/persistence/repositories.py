@@ -1,7 +1,5 @@
-from typing import Any, cast
 
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import Session
 
 from energy_trading_pypeline.domain.energy_market_event import EnergyMarketEvent
