@@ -1,9 +1,9 @@
-
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from energy_trading_pypeline.domain.energy_market_event import EnergyMarketEvent
-from energy_trading_pypeline.persistence.schema import raw_energy_market_events
+from energy_trading_pypeline.domain.market_snapshot import MarketSnapshot
+from energy_trading_pypeline.persistence.schema import market_snapshot, raw_energy_market_events
 
 
 class RawEnergyMarketEventRepository:
@@ -41,3 +41,48 @@ class RawEnergyMarketEventRepository:
         inserted_id = self._session.execute(statement).scalar_one_or_none()
 
         return inserted_id is not None
+    
+class MarketSnapshotRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def upsert_snapshot(self, snapshot: MarketSnapshot) -> bool:
+        insert_statement = insert(market_snapshot).values(
+            market_area=snapshot.market_area,
+            last_event_id=snapshot.last_event_id,
+            last_event_timestamp=snapshot.last_event_timestamp,
+            electricity_price_dkk_mwh=snapshot.eletricity_price_dkk_mwh,
+            imbalance_price_dkk_mwh=snapshot.imbalance_price_dkk_mwh,
+            wind_forecast_error_mw=snapshot.wind_forecast_error_mw,
+            solar_forecast_error_mw=snapshot.solar_forecast_error_mw,
+            renewable_actual_mw=snapshot.renewable_actual_mw,
+            net_load_mw=snapshot.net_load_mw,
+            imbalance_spread_dkk_mwh=snapshot.imbalance_spread_dkk_mwh,
+            quality_flag=snapshot.quality_flag,
+        )
+
+        upsert_statement = (
+            insert_statement.on_conflict_do_update(
+                index_elements=[market_snapshot.c.market_area],
+                set_={
+                    "last_event_id": insert_statement.excluded.last_event_id,
+                    "last_event_timestamp": insert_statement.excluded.last_event_timestamp,
+                    "electricity_price_dkk_mwh": 
+                    insert_statement.excluded.electricity_price_dkk_mwh,
+                    "imbalance_price_dkk_mwh": insert_statement.excluded.imbalance_price_dkk_mwh,
+                    "wind_forecast_error_mw": insert_statement.excluded.wind_forecast_error_mw,
+                    "solar_forecast_error_mw": insert_statement.excluded.solar_forecast_error_mw,
+                    "renewable_actual_mw": insert_statement.excluded.renewable_actual_mw,
+                    "net_load_mw": insert_statement.excluded.net_load_mw,
+                    "imbalance_spread_dkk_mwh": insert_statement.excluded.imbalance_spread_dkk_mwh,
+                    "quality_flag": insert_statement.excluded.quality_flag,
+                },
+                where=(
+                    insert_statement.excluded.last_event_timestamp
+                    >= market_snapshot.c.last_event_timestamp
+                ),
+            ).returning(market_snapshot.c.market_area)
+        )
+
+        updated_market_area = self._session.execute(upsert_statement).scalar_one_or_none()
+        return updated_market_area is not None

@@ -4,12 +4,16 @@ from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 
 from energy_trading_pypeline.config import get_settings
+from energy_trading_pypeline.domain.market_snapshot import calculate_snapshot
 from energy_trading_pypeline.messaging.consumer import (
     EnergyMarketEventConsumer,
     KafkaConsumerConfig,
 )
 from energy_trading_pypeline.persistence.db import SessionLocal
-from energy_trading_pypeline.persistence.repositories import RawEnergyMarketEventRepository
+from energy_trading_pypeline.persistence.repositories import (
+    MarketSnapshotRepository,
+    RawEnergyMarketEventRepository,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -69,7 +73,14 @@ def main() -> None:
 
                 with SessionLocal.begin() as session:
                     repository = RawEnergyMarketEventRepository(session)
+                    snapshot_repository = MarketSnapshotRepository(session)
                     inserted = repository.save_valid_event(event)
+                
+                    if inserted:
+                        snapshot = calculate_snapshot(event)
+                        snapshot_updated = snapshot_repository.upsert_snapshot(snapshot)
+                    else:
+                        snapshot_updated = False
 
                 consumer.commit(message)
                 consumed_messages += 1
@@ -77,25 +88,26 @@ def main() -> None:
                 if inserted:
                     print(
                         "Persisted event "
-                        f"event_id={event.event_id}"
-                        f"market_area={event.market_area}"
-                        f"partition={message.partition()}"
+                        f"event_id={event.event_id} "
+                        f"market_area={event.market_area} "
+                        f"snapshot_updated={snapshot_updated} "
+                        f"partition={message.partition()} "
                         f"offset={message.offset()}"
                     )
                 else:
                     print(
                         "Skipped duplicate event "
-                        f"event_id={event.event_id}"
-                        f"market_area={event.market_area}"
-                        f"partition={message.partition()}"
+                        f"event_id={event.event_id} "
+                        f"market_area={event.market_area} "
+                        f"partition={message.partition()} "
                         f"offset={message.offset()}"
                     )
                 
             except ValidationError as exc:
                 print(
                     "Invalid event payload. "
-                    f"partition={message.partition()}"
-                    f"offset={message.offset()}"
+                    f"partition={message.partition()} "
+                    f"offset={message.offset()} "
                     f"error={exc}"
                 )
 
@@ -107,8 +119,8 @@ def main() -> None:
             except SQLAlchemyError as exc:
                 print(
                     "Database error while processing message. "
-                    f"partition={message.partition()}"
-                    f"offset={message.offset()}"
+                    f"partition={message.partition()} "
+                    f"offset={message.offset()} "
                     f"error={exc}"
                 )
 

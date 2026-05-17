@@ -37,3 +37,20 @@ raw_energy_market_events = Table(
     Column("validation_error", Text, nullable=False),
     Column("ingested_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
 )
+
+market_snapshot = Table(
+    "market_snapshot",
+    metadata,
+    Column("market_area", String(length=16), primary_key=True),
+    Column("last_event_id", UUID(as_uuid=True), nullable=False),
+    Column("last_event_timestamp", DateTime(timezone=True), nullable=False),
+    Column("electricity_price_dkk_mwh", Numeric(12, 2), nullable=False),
+    Column("imbalance_price_dkk_mwh", Numeric(12, 2), nullable=False),
+    Column("wind_forecast_error_mw", Numeric(12, 2), nullable=False),
+    Column("solar_forecast_error_mw", Numeric(12, 2), nullable=False),
+    Column("renewable_actual_mw", Numeric(12, 2), nullable=False),
+    Column("net_load_mw", Numeric(12, 2), nullable=False),
+    Column("imbalance_spread_dkk_mwh", Numeric(12, 2), nullable=False),
+    Column("quality_flag", String(length=16), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+)
