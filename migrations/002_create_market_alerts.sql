@@ -1,7 +1,7 @@
 -- migrations/002_create_market_alerts.sql
 
 CREATE TABLE IF NOT EXISTS market_alerts (
-    id BIGSERIAL PRIMARY_KEY,
+    id BIGSERIAL PRIMARY KEY,
 
     alert_id UUID NOT NULL UNIQUE,
 
@@ -26,5 +26,5 @@ CREATE INDEX IF NOT EXISTS idx_market_alerts_alert_type_created_at
 ON market_alerts (alert_type, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_market_alerts_severity_created_at
-ON market alerts (severity, created_at DESC);
+ON market_alerts (severity, created_at DESC);
 

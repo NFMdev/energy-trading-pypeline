@@ -54,3 +54,19 @@ market_snapshot = Table(
     Column("quality_flag", String(length=16), nullable=False),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
 )
+
+market_alerts = Table(
+    "market_alerts",
+    metadata,
+    Column("id", BigInteger, primary_key=True),
+    Column("alert_id", UUID(as_uuid=True), nullable=False, unique=True),
+    Column("market_area", String(length=16), nullable=False),
+    Column("alert_type", String(length=64), nullable=False),
+    Column("severity", String(length=16), nullable=False),
+    Column("message", Text, nullable=False),
+    Column("observed_value", Numeric(14, 2), nullable=False),
+    Column("threshold_value", Numeric(14, 2), nullable=False),
+    Column("last_event_id", UUID(as_uuid=True), nullable=False),
+    Column("event_timestamp", DateTime(timezone=True), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+)

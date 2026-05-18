@@ -12,7 +12,7 @@ def create_snapshot() -> MarketSnapshot:
         market_area="DK1",
         last_event_id=uuid4(),
         last_event_timestamp=datetime.now(UTC),
-        eletricity_price_dkk_mwh=Decimal("800.00"),
+        electricity_price_dkk_mwh=Decimal("800.00"),
         imbalance_price_dkk_mwh=Decimal("950.00"),
         wind_forecast_error_mw=Decimal("-100.00"),
         solar_forecast_error_mw=Decimal("50.00"),

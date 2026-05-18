@@ -11,7 +11,7 @@ class MarketSnapshot:
     market_area: str
     last_event_id: UUID
     last_event_timestamp: datetime
-    eletricity_price_dkk_mwh: Decimal
+    electricity_price_dkk_mwh: Decimal
     imbalance_price_dkk_mwh: Decimal
     wind_forecast_error_mw: Decimal
     solar_forecast_error_mw: Decimal
@@ -33,7 +33,7 @@ def calculate_snapshot(event: EnergyMarketEvent) -> MarketSnapshot:
         market_area=event.market_area,
         last_event_id=event.event_id,
         last_event_timestamp=event.timestamp,
-        eletricity_price_dkk_mwh=event.electricity_price_dkk_mwh,
+        electricity_price_dkk_mwh=event.electricity_price_dkk_mwh,
         imbalance_price_dkk_mwh=event.imbalance_price_dkk_mwh,
         wind_forecast_error_mw=wind_forecast_error,
         solar_forecast_error_mw=solar_forecast_error,

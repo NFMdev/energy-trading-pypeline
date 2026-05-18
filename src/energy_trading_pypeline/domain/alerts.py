@@ -1,11 +1,10 @@
 from dataclasses import dataclass, field
-import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Literal
 from uuid import UUID, uuid4
 
 from energy_trading_pypeline.domain.market_snapshot import MarketSnapshot
-
 
 AlertType = Literal[
     "HIGH_IMBALANCE_SPREAD",
@@ -16,14 +15,14 @@ AlertType = Literal[
     "SUSPECT_QUALITY_FLAG"
 ]
 
-AlertSeverity = Literal["INFO", "WARINING", "CRITICAL"]
+AlertSeverity = Literal["INFO", "WARNING", "CRITICAL"]
 
 @dataclass(frozen=True)
 class AlertRuleConfig:
     high_imbalance_spread_dkk_mwh: Decimal = Decimal("500.00")
     high_wind_forecast_error_mw: Decimal = Decimal("750.00")
     high_solar_forecast_error_mw: Decimal = Decimal("500.00")
-    high_net_load: Decimal = Decimal("6500.00")
+    high_net_load_mw: Decimal = Decimal("6500.00")
 
 @dataclass(frozen=True)
 class MarketAlert:
@@ -36,7 +35,7 @@ class MarketAlert:
     threshold_value: Decimal
     last_event_id: UUID
     event_timestamp: datetime
-    created_at: datetime = field(default_factory=lambda: datetime.now(datetime.UTC))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 def evaluate_alerts(
         snapshot: MarketSnapshot,
@@ -50,7 +49,7 @@ def evaluate_alerts(
     if absolute_imbalance_spread >= rule_config.high_imbalance_spread_dkk_mwh:
         alerts.append(
             _create_alert(
-                snapshot,
+                snapshot=snapshot,
                 alert_type="HIGH_IMBALANCE_SPREAD",
                 severity="CRITICAL",
                 observed_value=absolute_imbalance_spread,
@@ -67,7 +66,7 @@ def evaluate_alerts(
     if absolute_wind_error >= rule_config.high_wind_forecast_error_mw:
         alerts.append(
             _create_alert(
-                snapshot,
+                snapshot=snapshot,
                 alert_type="HIGH_WIND_FORECAST_ERROR",
                 severity="WARNING",
                 observed_value=absolute_wind_error,
@@ -81,10 +80,10 @@ def evaluate_alerts(
     
     absolute_solar_error = abs(snapshot.solar_forecast_error_mw)
 
-    if absolute_wind_error >= rule_config.high_solar_forecast_error_mw:
+    if absolute_solar_error >= rule_config.high_solar_forecast_error_mw:
         alerts.append(
             _create_alert(
-                snapshot,
+                snapshot=snapshot,
                 alert_type="HIGH_SOLAR_FORECAST_ERROR",
                 severity="WARNING",
                 observed_value=absolute_solar_error,
@@ -92,6 +91,21 @@ def evaluate_alerts(
                 message=(
                     f"High solar forecast error detected in {snapshot.market_area}: "
                     f"{absolute_solar_error} MW"
+                ),
+            )
+        )
+    
+    if snapshot.electricity_price_dkk_mwh < Decimal("0"):
+        alerts.append(
+            _create_alert(
+                snapshot=snapshot,
+                alert_type="NEGATIVE_PRICE",
+                severity="INFO",
+                observed_value=snapshot.electricity_price_dkk_mwh,
+                threshold_value=Decimal(0.00),
+                message=(
+                    f"Negative electricity price detected in {snapshot.market_area}: "
+                    f"{snapshot.electricity_price_dkk_mwh} DKK/MW"
                 ),
             )
         )
