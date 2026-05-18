@@ -10,7 +10,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
-      - ./migrations/001_create_energy_market_tables.sql:/docker-entrypoint-initdb.d/001_create_energy_market_tables.sql
+      - ./migrations/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U energy_user -d energy_pipeline"]
       interval: 5s
