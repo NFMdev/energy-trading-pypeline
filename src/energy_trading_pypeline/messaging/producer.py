@@ -13,6 +13,7 @@ class KafkaProducerConfig:
     topic: str
     client_id: str = "energy-market-producer"
 
+
 class EnergyMarketEventProducer:
     def __init__(self, config: KafkaProducerConfig) -> None:
         self.config = config
@@ -21,7 +22,7 @@ class EnergyMarketEventProducer:
                 "bootstrap.servers": config.bootstrap_servers,
                 "client.id": config.client_id,
                 "acks": "all",
-                "enable.idempotence": True
+                "enable.idempotence": True,
             }
         )
 
@@ -41,7 +42,7 @@ class EnergyMarketEventProducer:
             raise RuntimeError("Kafka producer queue is full") from exc
         except KafkaException as exc:
             raise RuntimeError("Failed to produce event to Kafka") from exc
-        
+
     def flush(self, timeout_seconds: float = 10.0) -> None:
         remaining_messages = self._producer.flush(timeout_seconds)
 

@@ -5,12 +5,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 AppEnv = Literal["local", "test", "dev", "prod"]
 
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     app_env: AppEnv = "local"
 
@@ -36,7 +33,8 @@ class Settings(BaseSettings):
             for market_area in self.generator_market_areas.split(",")
             if market_area.strip()
         ]
-    
+
+
 @lru_cache
 def get_settings() -> Settings:
     return Settings()

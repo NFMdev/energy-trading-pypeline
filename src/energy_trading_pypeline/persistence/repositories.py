@@ -14,7 +14,7 @@ from energy_trading_pypeline.persistence.schema import (
 class RawEnergyMarketEventRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
-    
+
     def save_valid_event(self, event: EnergyMarketEvent) -> bool:
         statement = (
             insert(raw_energy_market_events)
@@ -46,7 +46,8 @@ class RawEnergyMarketEventRepository:
         inserted_id = self._session.execute(statement).scalar_one_or_none()
 
         return inserted_id is not None
-    
+
+
 class MarketSnapshotRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
@@ -66,32 +67,30 @@ class MarketSnapshotRepository:
             quality_flag=snapshot.quality_flag,
         )
 
-        upsert_statement = (
-            insert_statement.on_conflict_do_update(
-                index_elements=[market_snapshot.c.market_area],
-                set_={
-                    "last_event_id": insert_statement.excluded.last_event_id,
-                    "last_event_timestamp": insert_statement.excluded.last_event_timestamp,
-                    "electricity_price_dkk_mwh": 
-                    insert_statement.excluded.electricity_price_dkk_mwh,
-                    "imbalance_price_dkk_mwh": insert_statement.excluded.imbalance_price_dkk_mwh,
-                    "wind_forecast_error_mw": insert_statement.excluded.wind_forecast_error_mw,
-                    "solar_forecast_error_mw": insert_statement.excluded.solar_forecast_error_mw,
-                    "renewable_actual_mw": insert_statement.excluded.renewable_actual_mw,
-                    "net_load_mw": insert_statement.excluded.net_load_mw,
-                    "imbalance_spread_dkk_mwh": insert_statement.excluded.imbalance_spread_dkk_mwh,
-                    "quality_flag": insert_statement.excluded.quality_flag,
-                },
-                where=(
-                    insert_statement.excluded.last_event_timestamp
-                    >= market_snapshot.c.last_event_timestamp
-                ),
-            ).returning(market_snapshot.c.market_area)
-        )
+        upsert_statement = insert_statement.on_conflict_do_update(
+            index_elements=[market_snapshot.c.market_area],
+            set_={
+                "last_event_id": insert_statement.excluded.last_event_id,
+                "last_event_timestamp": insert_statement.excluded.last_event_timestamp,
+                "electricity_price_dkk_mwh": insert_statement.excluded.electricity_price_dkk_mwh,
+                "imbalance_price_dkk_mwh": insert_statement.excluded.imbalance_price_dkk_mwh,
+                "wind_forecast_error_mw": insert_statement.excluded.wind_forecast_error_mw,
+                "solar_forecast_error_mw": insert_statement.excluded.solar_forecast_error_mw,
+                "renewable_actual_mw": insert_statement.excluded.renewable_actual_mw,
+                "net_load_mw": insert_statement.excluded.net_load_mw,
+                "imbalance_spread_dkk_mwh": insert_statement.excluded.imbalance_spread_dkk_mwh,
+                "quality_flag": insert_statement.excluded.quality_flag,
+            },
+            where=(
+                insert_statement.excluded.last_event_timestamp
+                >= market_snapshot.c.last_event_timestamp
+            ),
+        ).returning(market_snapshot.c.market_area)
 
         updated_market_area = self._session.execute(upsert_statement).scalar_one_or_none()
         return updated_market_area is not None
-    
+
+
 class MarketAlertRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
@@ -99,7 +98,7 @@ class MarketAlertRepository:
     def save_alerts(self, alerts: list[MarketAlert]) -> int:
         if not alerts:
             return 0
-        
+
         values = [
             {
                 "alert_id": alert.alert_id,

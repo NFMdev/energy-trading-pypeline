@@ -31,6 +31,7 @@ def parse_args() -> argparse.Namespace:
 
     return parser.parse_args()
 
+
 def main() -> None:
     args = parse_args()
     settings = get_settings()
@@ -50,8 +51,7 @@ def main() -> None:
 
     producer = EnergyMarketEventProducer(
         KafkaProducerConfig(
-            bootstrap_servers=settings.kafka_bootstrap_servers,
-            topic=settings.kafka_raw_topic
+            bootstrap_servers=settings.kafka_bootstrap_servers, topic=settings.kafka_raw_topic
         )
     )
 
@@ -59,7 +59,7 @@ def main() -> None:
         event = generate_energy_market_event()
         producer.produce(event)
 
-        print (
+        print(
             f"Queued event {index + 1}/{args.count}: "
             f"event_id={event.event_id} "
             f"market_area={event.market_area} "
@@ -68,9 +68,10 @@ def main() -> None:
 
         if args.delay_seconds > 0:
             time.sleep(args.delay_seconds)
-        
+
     producer.flush()
     print(f"Produced {args.count} event(s) to topic {settings.kafka_raw_topic}")
+
 
 if __name__ == "__main__":
     main()

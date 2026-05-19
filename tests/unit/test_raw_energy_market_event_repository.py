@@ -21,6 +21,7 @@ def create_event() -> EnergyMarketEvent:
         quality_flag="OK",
     )
 
+
 def test_save_valid_event_returns_true_when_inserted() -> None:
     session = Mock()
     session.execute.return_value.scalar_one_or_none.return_value = 1
@@ -30,6 +31,7 @@ def test_save_valid_event_returns_true_when_inserted() -> None:
     inserted = repository.save_valid_event(create_event())
     assert inserted is True
     session.execute.assert_called_once()
+
 
 def test_save_valid_event_returns_false_when_duplicate() -> None:
     session = Mock()

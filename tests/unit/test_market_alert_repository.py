@@ -20,6 +20,7 @@ def create_alert() -> MarketAlert:
         event_timestamp=datetime.now(UTC),
     )
 
+
 def test_save_alerts_returns_zero_when_alert_list_is_empty() -> None:
     session = Mock()
 
@@ -29,6 +30,7 @@ def test_save_alerts_returns_zero_when_alert_list_is_empty() -> None:
 
     assert inserted_alerts == 0
     session.execute.assert_not_called()
+
 
 def test_save_alerts_returns_inserted_count() -> None:
     session = Mock()

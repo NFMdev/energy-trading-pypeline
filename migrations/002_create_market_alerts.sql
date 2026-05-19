@@ -27,4 +27,3 @@ ON market_alerts (alert_type, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_market_alerts_severity_created_at
 ON market_alerts (severity, created_at DESC);
-

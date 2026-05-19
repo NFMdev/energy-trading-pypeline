@@ -35,12 +35,14 @@ def create_snapshot(
         quality_flag=quality_flag,
     )
 
+
 def test_returns_no_alerts_when_snapshot_is_normal() -> None:
     snapshot = create_snapshot()
 
     alerts = evaluate_alerts(snapshot)
 
     assert alerts == []
+
 
 def test_detects_high_imbalance_spread() -> None:
     snapshot = create_snapshot(
@@ -51,6 +53,7 @@ def test_detects_high_imbalance_spread() -> None:
 
     assert len(alerts) == 1
     assert alerts[0].alert_type == "HIGH_IMBALANCE_SPREAD"
+
 
 def test_detects_high_wind_forecast_error_using_absolute_value() -> None:
     snapshot = create_snapshot(
@@ -63,6 +66,7 @@ def test_detects_high_wind_forecast_error_using_absolute_value() -> None:
     assert alerts[0].alert_type == "HIGH_WIND_FORECAST_ERROR"
     assert alerts[0].observed_value == Decimal("900.00")
 
+
 def test_detects_negative_price() -> None:
     snapshot = create_snapshot(
         electricity_price_dkk_mwh=Decimal("-50.00"),
@@ -72,6 +76,7 @@ def test_detects_negative_price() -> None:
 
     assert len(alerts) == 1
     assert alerts[0].alert_type == "NEGATIVE_PRICE"
+
 
 def test_detects_multiple_alerts() -> None:
     snapshot = create_snapshot(
@@ -89,6 +94,7 @@ def test_detects_multiple_alerts() -> None:
         "HIGH_NET_LOAD",
         "NEGATIVE_PRICE",
     }
+
 
 def test_allows_custom_tresholds() -> None:
     snapshot = create_snapshot(

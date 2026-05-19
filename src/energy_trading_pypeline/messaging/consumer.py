@@ -15,6 +15,7 @@ class KafkaConsumerConfig:
     client_id: str = "energy-market-consumer"
     auto_offset_reset: str = "earliest"
 
+
 class EnergyMarketEventConsumer:
     def __init__(self, config: KafkaConsumerConfig) -> None:
         self._config = config
@@ -27,7 +28,7 @@ class EnergyMarketEventConsumer:
                 "enable.auto.commit": False,
             }
         )
-    
+
     def subscribe(self) -> None:
         self._consumer.subscribe([self._config.topic])
 
@@ -36,25 +37,25 @@ class EnergyMarketEventConsumer:
 
         if message is None:
             return None
-        
+
         error = message.error()
 
         if error is None:
             return message
-        
+
         if error.code() == KafkaError._PARTITION_EOF:
             return None
-        
+
         raise KafkaException(error)
-    
+
     def parse_message(self, message: Any) -> EnergyMarketEvent:
         payload = message.value()
 
         if payload is None:
             raise ValueError("Kafka message payload cannot be null")
-        
+
         return deserialize_energy_market_event(payload)
-    
+
     def commit(self, message: Any) -> None:
         self._consumer.commit(message=message, asynchronous=False)
 

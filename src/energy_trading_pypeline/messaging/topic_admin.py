@@ -10,11 +10,9 @@ class KafkaTopicConfig:
     partitions: int = 3
     replication_factor: int = 1
 
+
 def check_topic_exists(
-        *,
-        bootstrap_servers: str,
-        topic_config: KafkaTopicConfig,
-        timeout_seconds: float = 10.0
+    *, bootstrap_servers: str, topic_config: KafkaTopicConfig, timeout_seconds: float = 10.0
 ) -> bool:
     admin_client = AdminClient({"bootstrap.servers": bootstrap_servers})
 
@@ -22,11 +20,11 @@ def check_topic_exists(
 
     if topic_config.name in metadata.topics:
         return False
-    
+
     topic = NewTopic(
         topic=topic_config.name,
         num_partitions=topic_config.partitions,
-        replication_factor=topic_config.replication_factor
+        replication_factor=topic_config.replication_factor,
     )
 
     futures = admin_client.create_topics([topic])

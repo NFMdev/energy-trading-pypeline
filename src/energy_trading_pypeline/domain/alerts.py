@@ -12,10 +12,11 @@ AlertType = Literal[
     "HIGH_SOLAR_FORECAST_ERROR",
     "NEGATIVE_PRICE",
     "HIGH_NET_LOAD",
-    "SUSPECT_QUALITY_FLAG"
+    "SUSPECT_QUALITY_FLAG",
 ]
 
 AlertSeverity = Literal["INFO", "WARNING", "CRITICAL"]
+
 
 @dataclass(frozen=True)
 class AlertRuleConfig:
@@ -23,6 +24,7 @@ class AlertRuleConfig:
     high_wind_forecast_error_mw: Decimal = Decimal("750.00")
     high_solar_forecast_error_mw: Decimal = Decimal("500.00")
     high_net_load_mw: Decimal = Decimal("6500.00")
+
 
 @dataclass(frozen=True)
 class MarketAlert:
@@ -37,9 +39,10 @@ class MarketAlert:
     event_timestamp: datetime
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
+
 def evaluate_alerts(
-        snapshot: MarketSnapshot,
-        config: AlertRuleConfig | None = None,
+    snapshot: MarketSnapshot,
+    config: AlertRuleConfig | None = None,
 ) -> list[MarketAlert]:
     rule_config = config or AlertRuleConfig()
     alerts: list[MarketAlert] = []
@@ -77,7 +80,7 @@ def evaluate_alerts(
                 ),
             )
         )
-    
+
     absolute_solar_error = abs(snapshot.solar_forecast_error_mw)
 
     if absolute_solar_error >= rule_config.high_solar_forecast_error_mw:
@@ -94,7 +97,7 @@ def evaluate_alerts(
                 ),
             )
         )
-    
+
     if snapshot.electricity_price_dkk_mwh < Decimal("0"):
         alerts.append(
             _create_alert(
@@ -119,8 +122,7 @@ def evaluate_alerts(
                 observed_value=snapshot.net_load_mw,
                 threshold_value=rule_config.high_net_load_mw,
                 message=(
-                    f"High net load detected in {snapshot.market_area}: "
-                    f"{snapshot.net_load_mw} MW"
+                    f"High net load detected in {snapshot.market_area}: {snapshot.net_load_mw} MW"
                 ),
             )
         )
@@ -136,8 +138,9 @@ def evaluate_alerts(
                 message=f"Suspect quality flag detected in {snapshot.market_area}",
             )
         )
-    
+
     return alerts
+
 
 def _create_alert(
     *,

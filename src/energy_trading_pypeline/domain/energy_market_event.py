@@ -7,15 +7,14 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 QualityFlag = Literal["OK", "ESTIMATED", "MISSING", "SUSPECT"]
 
+
 class EnergyMarketEvent(BaseModel):
     """
     Canonical event contract for synthetic energy market data.
     The event represents one observation for a market area at a specific point in time.
     """
-    model_config = ConfigDict(
-        frozen=True,
-        extra="forbid"
-    )
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     SUPPORTED_MARKET_AREAS: ClassVar[set[str]] = {"DK1", "DK2", "DE", "SE3", "NO2"}
 
@@ -43,7 +42,7 @@ class EnergyMarketEvent(BaseModel):
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("datetime fields must be timezone-aware")
         return value
-    
+
     @field_validator("market_area")
     @classmethod
     def normalize_market_area(cls, value: str) -> str:
@@ -53,5 +52,5 @@ class EnergyMarketEvent(BaseModel):
             raise ValueError(
                 f"Unsupported market_area '{value}'. Supported values: {supported_values}"
             )
-        
+
         return normalized_value

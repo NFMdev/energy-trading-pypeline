@@ -20,6 +20,7 @@ class MarketSnapshot:
     imbalance_spread_dkk_mwh: Decimal
     quality_flag: QualityFlag
 
+
 def calculate_snapshot(event: EnergyMarketEvent) -> MarketSnapshot:
     wind_forecast_error = event.actual_wind_mw - event.forecast_wind_mw
     solar_forecast_error = event.actual_solar_mw - event.forecast_solar_mw
@@ -40,5 +41,5 @@ def calculate_snapshot(event: EnergyMarketEvent) -> MarketSnapshot:
         renewable_actual_mw=renewable_actual,
         net_load_mw=net_load,
         imbalance_spread_dkk_mwh=imbalance_spread,
-        quality_flag=event.quality_flag
+        quality_flag=event.quality_flag,
     )

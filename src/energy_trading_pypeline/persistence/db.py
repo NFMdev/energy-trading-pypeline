@@ -15,14 +15,11 @@ def create_database_engine() -> Engine:
         future=True,
     )
 
+
 engine = create_database_engine()
 
-SessionLocal = sessionmaker(
-    bind=engine,
-    autoflush=False,
-    autocommit=False,
-    future=True
-)
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+
 
 def get_database_session() -> Generator[Session, None, None]:
     with SessionLocal() as session:

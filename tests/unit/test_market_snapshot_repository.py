@@ -22,6 +22,7 @@ def create_snapshot() -> MarketSnapshot:
         quality_flag="OK",
     )
 
+
 def test_upsert_snapshot_return_true_when_inserted_or_updated() -> None:
     session = Mock()
     session.execute.return_value.scalar_one_or_none.return_value = "DK1"
@@ -31,6 +32,7 @@ def test_upsert_snapshot_return_true_when_inserted_or_updated() -> None:
 
     assert updated is True
     session.execute.assert_called_once()
+
 
 def test_upsert_snapshot_returns_false_when_event_is_stale() -> None:
     session = Mock()

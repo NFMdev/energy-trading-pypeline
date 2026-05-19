@@ -7,8 +7,10 @@ from energy_trading_pypeline.domain.energy_market_event import EnergyMarketEvent
 MARKET_AREAS = ["DK1", "DK2", "DE", "SE3", "NO2"]
 SOURCE_NAME = "energy-generator"
 
+
 def decimal_from_float(value: float) -> Decimal:
     return Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
 
 def generate_energy_market_event() -> EnergyMarketEvent:
     market_area = choice(MARKET_AREAS)
@@ -35,12 +37,14 @@ def generate_energy_market_event() -> EnergyMarketEvent:
         load_mw=decimal_from_float(load_mw),
         imbalance_price_dkk_mwh=decimal_from_float(imbalance_price),
         source=SOURCE_NAME,
-        quality_flag="OK"
+        quality_flag="OK",
     )
+
 
 def main() -> None:
     event = generate_energy_market_event()
     print(event.model_dump_json(indent=2))
+
 
 if __name__ == "__main__":
     main()

@@ -28,7 +28,7 @@ def parse_args() -> argparse.Namespace:
         "--max-messages",
         type=int,
         default=0,
-        help="Maximum number of messages to consume. Use 0 to run continously."
+        help="Maximum number of messages to consume. Use 0 to run continously.",
     )
 
     parser.add_argument(
@@ -39,6 +39,7 @@ def parse_args() -> argparse.Namespace:
     )
 
     return parser.parse_args()
+
 
 def main() -> None:
     args = parse_args()
@@ -55,9 +56,7 @@ def main() -> None:
     consumed_messages = 0
 
     print(
-        "Started consumer "
-        f"topic={settings.kafka_raw_topic}"
-        f"group_id={settings.kafka_consumer_group}"
+        f"Started consumer topic={settings.kafka_raw_topic}group_id={settings.kafka_consumer_group}"
     )
 
     try:
@@ -79,7 +78,7 @@ def main() -> None:
                     alert_repository = MarketAlertRepository(session)
 
                     inserted = repository.save_valid_event(event)
-                
+
                     if inserted:
                         snapshot = calculate_snapshot(event)
                         snapshot_updated = snapshot_repository.upsert_snapshot(snapshot)
@@ -114,7 +113,7 @@ def main() -> None:
                         f"partition={message.partition()} "
                         f"offset={message.offset()}"
                     )
-                
+
             except ValidationError as exc:
                 print(
                     "Invalid event payload. "
@@ -127,7 +126,7 @@ def main() -> None:
                 # Commit invalid messages to avoid blocking the consumer forever.
                 # TODO: send invalid payloads to a dead-letter topic/table.
                 consumer.commit(message)
-            
+
             except SQLAlchemyError as exc:
                 print(
                     "Database error while processing message. "
@@ -144,6 +143,7 @@ def main() -> None:
     finally:
         consumer.close()
         print(f"Consumer stopped. consumed_messages={consumed_messages}")
+
 
 if __name__ == "__main__":
     main()
