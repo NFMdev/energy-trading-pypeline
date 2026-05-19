@@ -118,6 +118,90 @@ uv run energy-produce --count 20 --delay-seconds 0.1
 uv run energy-consume --max-messages 20
 ```
 
+## Development workflow
+
+This project uses `uv` for dependency management and a `Makefile` to standardize local development commands.
+
+### Install dependencies
+
+```bash
+make install
+```
+
+### Run quality checks
+
+```bash
+make check
+```
+
+This runs:
+
+```bash
+uv run ruff check .
+uv run mypy src tests
+uv run pytest
+```
+
+### Format code
+
+```bash
+make format
+```
+
+### Start local infrastructure
+
+```bash
+make up
+```
+
+This starts the local Docker Compose stack:
+
+- PostgreSQL
+- Redpanda
+- Redpanda Console
+
+### Stop local infrastructure
+
+```bash
+make down
+```
+
+### Check database connectivity
+
+```bash
+make check-db
+```
+
+### Produce synthetic events
+
+```bash
+make produce
+```
+
+### Consume events
+
+```bash
+make consume
+```
+
+## Quality gates
+
+The project has two quality gates:
+
+### 1. Local quality gate:
+
+```bash
+make check
+```
+
+### 2. Remote CI quality gate through GitHub Actions.
+
+The CI pipeline runs on push and pull requests and validates:
+
+- Ruff linting
+- Strict mypy type checking
+- Pytest test suite
+
 ## Status
 
 This project is currently at MVP v0.1.
