@@ -1,37 +1,93 @@
 # Energy Trading Pypeline
 
-Energy Trading Pypeline is a Python-based data pipeline project focused on energy market data, trading-related time-series processing, and operational reliability.
+Energy Trading Pypeline is a Python-based portfolio project that simulates a small internal data platform for energy market data.
 
-The goal of this project is to simulate a realistic internal data platform where synthetic energy market events are generated, ingested, validated, stored, transformed, and analyzed to produce derived metrics, anomaly detection, and alert logic.
+The project is designed to practice professional Python in a realistic data engineering / energy trading context: typed data contracts, event ingestion, Kafka-compatible messaging, PostgreSQL persistence, derived operational state, alert logic, testing and technical documentation.
 
-## Purpose
+## Context
 
-This project is designed as a practical learning and portfolio project to strengthen Python engineering skills in a data-intensive, energy trading context.
+This project simulates a pipeline for synthetic energy market events.
 
-It focuses on writing Python in a professional way, using a real project structure, type hints, validation, testing, observability, and containerized infrastructure.
-
-## Main Flow
+### Current flow:
 
 ```text
 Synthetic energy market data
         ↓
-Ingestion
+Pydantic validation
         ↓
-Validation
+Redpanda / Kafka-compatible topic
         ↓
-Storage
+Python consumer
         ↓
-Transformations
+PostgreSQL raw event storage
         ↓
-Derived metrics
+Market snapshot derivation
         ↓
-Anomaly / alert logic
-        ↓
-Observability & documentation
+Basic alert evaluation
+```
+### Goals
+
+The project focuses on:
+
+- Python project structure
+- Pydantic data contracts
+- Ingestion using Redpanda
+- PostgreSQL storage
+- Derived market snapshots
+- Basic alert logic
+- Type checking with mypy
+- Testing with pytest
+- Reproducible local infrastructure with Docker Compose
+
+## Tech Stack
+
+- Python 3.12
+- Pydantic
+- pydantic-settings
+- pytest
+- mypy
+- ruff
+- SQLAlchemy Core
+- psycopg
+- PostgreSQL
+- Redpanda
+- Docker Compose
+
+## Main Concepts
+
+### Raw Events
+
+```text
+Raw events are stored in raw_energy_market_events.
+
+This table acts as an immutable event log for auditability, debugging and future replay.
+```
+### Market Snapshots
+
+```text
+The market_snapshot table stores the latest operational state per market_area.
+
+A snapshot is only updated if the incoming event is at least as recent as the current stored state.
 ```
 
-## Status
+### Alerts
 
-Early development phase.
+```text
+The market_alerts table stores derived alert events based on market conditions such as:
 
-The initial focus is to define the project structure, domain model, synthetic data generator, and ingestion flow.
+- High imbalance spread
+- High forecast error
+- Negative electricity price
+- High net load
+- Suspect quality flag
+```
+
+## Getting Started
+
+### 1. Install dependencies
+```console
+uv sync --dev
+```
+### 2. Start local infrastructure
+```console
+docker compose up -d
