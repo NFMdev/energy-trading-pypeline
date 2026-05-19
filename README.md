@@ -1,5 +1,7 @@
 # Energy Trading Pypeline
 
+![CI](https://github.com/NFMdev/energy-trading-pypeline/actions/workflows/ci.yml/badge.svg)
+
 Energy Trading Pypeline is a Python-based portfolio project that simulates a small internal data platform for energy market data.
 
 The project is designed to practice professional Python in a realistic data engineering / energy trading context: typed data contracts, event ingestion, Kafka-compatible messaging, PostgreSQL persistence, derived operational state, alert logic, testing and technical documentation.
