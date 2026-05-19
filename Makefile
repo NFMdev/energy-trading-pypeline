@@ -1,31 +1,33 @@
-.PHONY: help install test lint format typecheck check up down restart logs check-db produce consume clean
+.PHONY: help install test lint format typecheck check up down restart logs check-db produce consume clean precommit-install precommit
 
 help:
 	@echo "Energy Trading Pypeline - Development Commands"
 	@echo ""
 	@echo "Setup:"
-	@echo "	make install	Install project dependencies with uv"
+	@echo "	make install		Install project dependencies with uv"
+	@echo "	make precommit-install	Install Git pre-commit hooks"
 	@echo ""
 	@echo "Quality:"
-	@echo "	make test	Run test suite"
-	@echo "	make lint	Run ruff linting"
-	@echo "	make format	Format code with ruff"
-	@echo "	make typecheck	Run mypy strict checks"
-	@echo "	make check	Run lint, typecheck, and tests"
+	@echo "	make test		Run test suite"
+	@echo "	make lint		Run ruff linting"
+	@echo "	make format		Format code with ruff"
+	@echo "	make typecheck		Run mypy strict checks"
+	@echo "	make check		Run lint, typecheck, and tests"
+	@echo "	make precommit		Run pre-commit hooks on all files"
 	@echo ""
 	@echo "Infrastructure:"
-	@echo "	make up		Start local Docker Compose infrastructure"
-	@echo "	make down	Stop local Docker Compose infrastructure"
-	@echo "	make restart	Restart local Docker Compose infrastructure"
-	@echo "	make logs	Follow Docker Compose logs"
+	@echo "	make up			Start local Docker Compose infrastructure"
+	@echo "	make down		Stop local Docker Compose infrastructure"
+	@echo "	make restart		Restart local Docker Compose infrastructure"
+	@echo "	make logs		Follow Docker Compose logs"
 	@echo ""
 	@echo "Pipeline:"
-	@echo "	make check-db	Check PostgreSQL connectivity"
-	@echo "	make produce	Produce synthetic events to Redpanda/Kafka"
-	@echo "	make consume	Consume raw events and persist them"
+	@echo "	make check-db		Check PostgreSQL connectivity"
+	@echo "	make produce		Produce synthetic events to Redpanda/Kafka"
+	@echo "	make consume		Consume raw events and persist them"
 	@echo ""
 	@echo "Maintenance:"
-	@echo "	make clean	Remove local Python cache files"
+	@echo "	make clean		Remove local Python cache files"
 
 install:
 	uv sync
@@ -69,3 +71,9 @@ clean:
 	find . -type d -name ".pytest_cache" -prune exec rm -rf {} +
 	find . -type d -name ".mypy_cache" -prune exec rm -rf {} +
 	find . -type d -name ".ruff_cache" -prune exec rm -rf {} +
+
+precommit-install:
+	uv run pre-commit install
+
+precommit:
+	uv run pre-commit run --all-files
