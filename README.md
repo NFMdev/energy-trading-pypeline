@@ -88,6 +88,46 @@ The market_alerts table stores derived alert events based on market conditions s
 ```console
 uv sync --dev
 ```
-### 2. Start local infrastructure
+
+### 2. Run tests and checks
+```console
+uv run pytest
+uv run ruff check .
+uv run mypy src tests
+```
+
+### 3. Start local infrastructure
 ```console
 docker compose up -d
+```
+
+### 4. Check PostgreSQL connection
+```console
+uv run energy-check-db
+```
+
+### 5. Produce synthetic events
+```console
+uv run energy-produce --count 20 --delay-seconds 0.1
+```
+
+### 6. Consume and persist events
+```console
+uv run energy-consume --max-messages 20
+```
+
+## Status
+
+This project is currently at MVP v0.1.
+
+The core pipeline is implemented:
+
+- synthetic event generation
+- Kafka-compatible ingestion with Redpanda
+- Pydantic validation
+- PostgreSQL raw event persistence
+- derived market snapshots
+- basic alert generation
+- tests and technical documentation
+
+Future work focuses on observability, integration testing, dead-letter handling and analytics.
