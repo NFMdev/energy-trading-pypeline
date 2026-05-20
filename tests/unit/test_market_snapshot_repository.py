@@ -3,8 +3,12 @@ from decimal import Decimal
 from unittest.mock import Mock
 from uuid import uuid4
 
+import pytest
+
 from energy_trading_pypeline.domain.market_snapshot import MarketSnapshot
 from energy_trading_pypeline.persistence.repositories import MarketSnapshotRepository
+
+pytestmark = pytest.mark.unit
 
 
 def create_snapshot() -> MarketSnapshot:

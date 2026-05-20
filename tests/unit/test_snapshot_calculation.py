@@ -1,8 +1,12 @@
 from datetime import UTC, datetime
 from decimal import Decimal
 
+import pytest
+
 from energy_trading_pypeline.domain.energy_market_event import EnergyMarketEvent
 from energy_trading_pypeline.domain.market_snapshot import calculate_snapshot
+
+pytestmark = pytest.mark.unit
 
 
 def test_calculate_snapshot_from_market_event() -> None:

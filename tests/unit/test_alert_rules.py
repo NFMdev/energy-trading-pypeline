@@ -2,9 +2,13 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
+import pytest
+
 from energy_trading_pypeline.domain.alerts import AlertRuleConfig, evaluate_alerts
 from energy_trading_pypeline.domain.energy_market_event import QualityFlag
 from energy_trading_pypeline.domain.market_snapshot import MarketSnapshot
+
+pytestmark = pytest.mark.unit
 
 
 def create_snapshot(

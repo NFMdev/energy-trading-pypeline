@@ -6,6 +6,8 @@ from pydantic import ValidationError
 
 from energy_trading_pypeline.domain.energy_market_event import EnergyMarketEvent
 
+pytestmark = pytest.mark.unit
+
 
 def test_energy_market_event_accepts_valid_event() -> None:
     event = EnergyMarketEvent(

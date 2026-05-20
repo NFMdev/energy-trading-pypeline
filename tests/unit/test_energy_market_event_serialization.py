@@ -1,11 +1,15 @@
 from datetime import UTC, datetime
 from decimal import Decimal
 
+import pytest
+
 from energy_trading_pypeline.domain.energy_market_event import EnergyMarketEvent
 from energy_trading_pypeline.messaging.serialization import (
     deserialize_energy_market_event,
     serialize_energy_market_event,
 )
+
+pytestmark = pytest.mark.unit
 
 
 def test_serializes_and_deserializes_energy_market_event() -> None:

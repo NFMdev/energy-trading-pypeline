@@ -1,6 +1,10 @@
 from decimal import Decimal
 
+import pytest
+
 from energy_trading_pypeline.generator.event_generator import generate_energy_market_event
+
+pytestmark = pytest.mark.unit
 
 
 def test_generate_energy_market_event_returns_valid_event() -> None:
