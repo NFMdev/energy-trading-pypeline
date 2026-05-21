@@ -1,4 +1,4 @@
-.PHONY: help install test lint format typecheck check up down restart logs check-db produce consume clean precommit-install precommit
+.PHONY: help install test test-unit test-integration test-all lint format typecheck check check-all up down restart logs check-db produce consume clean precommit-install precommit
 
 help:
 	@echo "Energy Trading Pypeline - Development Commands"
@@ -8,11 +8,15 @@ help:
 	@echo "	make precommit-install	Install Git pre-commit hooks"
 	@echo ""
 	@echo "Quality:"
-	@echo "	make test		Run test suite"
+	@echo "	make test		Run unit tests"
+	@echo "	make test-unit		Run unit tests"
+	@echo "	make test-integration	Run integration tests if available"
+	@echo "	make test-all		Run test suite"
 	@echo "	make lint		Run ruff linting"
 	@echo "	make format		Format code with ruff"
 	@echo "	make typecheck		Run mypy strict checks"
-	@echo "	make check		Run lint, typecheck, and tests"
+	@echo "	make check		Run lint, typecheck, and unit tests"
+	@echo "	make check-all		Run lint, typecheck, and test suite"
 	@echo "	make precommit		Run pre-commit hooks on all files"
 	@echo ""
 	@echo "Infrastructure:"
@@ -32,8 +36,19 @@ help:
 install:
 	uv sync
 
-test:
-	uv run pytest
+test: test-unit
+
+test-unit:
+	uv run pytest tests/unit
+
+test-integration:
+	@if find tests/integration -type f \( -name "test_*.py" -o -name "*_test.py" \) | grep -q .; then \
+		uv run pytest tests/integration; \
+	else \
+		echo "No integration tests found."; \
+	fi
+
+test-all: test-unit test-integration
 
 lint:
 	uv run ruff check .
@@ -45,7 +60,9 @@ format:
 typecheck:
 	uv run mypy src tests
 
-check: lint typecheck test
+check: lint typecheck test-unit
+
+check-all: lint typecheck test-all
 
 up:
 	docker compose up -d
