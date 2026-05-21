@@ -33,6 +33,7 @@ dev = [
     "ruff>=0.15.12",
     "mypy>=2.1.0",
     "pre-commit>=4.6.0",
+    "testcontainers[postgres]>=4.14.2",
 ]
 
 [tool.ruff]
@@ -54,7 +55,7 @@ strict = true
 mypy_path = "src"
 
 [[tool.mypy.overrides]]
-module = ["confluent_kafka.*"]
+module = ["confluent_kafka.*", "testcontainers.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
