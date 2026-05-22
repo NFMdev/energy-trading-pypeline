@@ -5,15 +5,15 @@ from sqlalchemy.orm import Session
 pytestmark = pytest.mark.integration
 
 
-def test_postgres_container_is_available(db_session: Session) -> None:
-    result = db_session.execute(text("SELECT 1")).scalar_one()
+def test_postgres_container_is_available(session: Session) -> None:
+    result = session.execute(text("SELECT 1")).scalar_one()
 
     assert result == 1
 
 
-def test_migrations_create_expected_tables(db_session: Session) -> None:
+def test_migrations_create_expected_tables(session: Session) -> None:
     table_names = (
-        db_session.execute(
+        session.execute(
             text(
                 """
             SELECT table_name

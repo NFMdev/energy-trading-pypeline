@@ -74,7 +74,7 @@ def postgres_engine(postgres_database_url: str) -> Generator[Engine, None, None]
 
 
 @pytest.fixture()
-def db_session(postgres_engine: Engine) -> Generator[Session, None, None]:
+def session(postgres_engine: Engine) -> Generator[Session, None, None]:
     session_factory = sessionmaker(
         bind=postgres_engine,
         autoflush=False,
