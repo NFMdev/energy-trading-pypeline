@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from energy_trading_pypeline.domain.alerts import MarketAlert
+from energy_trading_pypeline.domain.alerts import AlertSeverity, AlertType, MarketAlert
 from energy_trading_pypeline.persistence.repositories import MarketAlertRepository
 
 pytestmark = pytest.mark.integration
@@ -16,8 +16,8 @@ pytestmark = pytest.mark.integration
 def _create_market_alert(
     alert_id: UUID | None = None,
     market_area: str = "DK1",
-    alert_type: str = "HIGH_IMBALANCE_SPREAD",
-    severity: str = "CRITICAL",
+    alert_type: AlertType = "HIGH_IMBALANCE_SPREAD",
+    severity: AlertSeverity = "CRITICAL",
     message: str = "High imbalance spread detected for DK1",
     observed_value: Decimal = Decimal("750.00"),
     threshold_value: Decimal = Decimal("500.00"),
