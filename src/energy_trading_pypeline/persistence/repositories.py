@@ -34,7 +34,7 @@ class RawEnergyMarketEventRepository:
                 source=event.source,
                 quality_flag=event.quality_flag,
                 payload=event.model_dump(mode="json"),
-                validation_status="Valid",
+                validation_status="VALID",
                 validation_error=None,
             )
             .on_conflict_do_nothing(
