@@ -23,7 +23,7 @@ def _create_energy_market_event(
     forecast_wind_mw: Decimal = Decimal("1200.00"),
     actual_wind_mw: Decimal = Decimal("1300.00"),
     forecast_solar_mw: Decimal = Decimal("300.00"),
-    actual_solar_mw: Decimal = Decimal(280.00),
+    actual_solar_mw: Decimal = Decimal("280.00"),
     load_mw: Decimal = Decimal("5000.00"),
     imbalance_price_dkk_mwh: Decimal = Decimal("975.00"),
     source: str = "integration-test",
