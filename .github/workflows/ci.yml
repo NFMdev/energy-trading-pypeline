@@ -67,5 +67,5 @@ jobs:
       - name: Check Docker availability
         run: docker version
 
-      - name: Run PostgreSQL integration tests
+      - name: Run events processing integration tests
         run: uv run pytest tests/integration
