@@ -39,3 +39,42 @@ Developer workflow and maintainability release.
 - pre-commit hooks
 - GitHub Actions CI
 - local and remote quality gates
+
+## v0.3 — Real Event processing Integration Testing
+
+Release focused on infrastructure-backed integration testing.
+
+### Included
+
+- Separation between unit and integration test workflows
+- Pytest markers for `unit` and `integration`
+- Dedicated Makefile commands for:
+  - `make test-unit`
+  - `make test-integration`
+  - `make test-all`
+  - `make check`
+  - `make check-all`
+- PostgreSQL integration test infrastructure using Testcontainers
+- Real SQL migrations applied during integration tests
+- PostgreSQL-backed repository integration tests for:
+  - `raw_energy_market_events`
+  - `market_snapshot`
+  - `market_alerts`
+- Transactional event processor extracted from the Kafka consumer script
+- PostgreSQL-backed integration tests for the event processor
+- GitHub Actions job for PostgreSQL integration tests
+
+### Validated behavior
+
+The integration test suite validates that:
+
+- raw energy market events are persisted idempotently
+- duplicate `event_id` values do not overwrite existing raw events
+- market snapshots are inserted for new market areas
+- market snapshots update only when incoming events are newer or equal in timestamp
+- stale events do not overwrite newer operational state
+- market alerts are persisted as a derived event log
+- duplicate `alert_id` values are idempotently ignored
+- a valid event is processed transactionally into raw event, snapshot and alerts
+- duplicate events do not reprocess derived state
+- stale events are stored as raw history but do not update snapshots or generate alerts
