@@ -6,7 +6,7 @@ from uuid import uuid4
 import pytest
 
 from energy_trading_pypeline.domain.alerts import MarketAlert
-from energy_trading_pypeline.persistence.repositories import MarketAlertRepository
+from energy_trading_pypeline.persistence.repository.repositories import MarketAlertRepository
 
 pytestmark = pytest.mark.unit
 

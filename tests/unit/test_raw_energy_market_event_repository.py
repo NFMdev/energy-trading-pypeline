@@ -5,7 +5,9 @@ from unittest.mock import Mock
 import pytest
 
 from energy_trading_pypeline.domain.energy_market_event import EnergyMarketEvent
-from energy_trading_pypeline.persistence.repositories import RawEnergyMarketEventRepository
+from energy_trading_pypeline.persistence.repository.repositories import (
+    RawEnergyMarketEventRepository,
+)
 
 pytestmark = pytest.mark.unit
 

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from energy_trading_pypeline.domain.alerts import evaluate_alerts
 from energy_trading_pypeline.domain.energy_market_event import EnergyMarketEvent
 from energy_trading_pypeline.domain.market_snapshot import calculate_snapshot
-from energy_trading_pypeline.persistence.repositories import (
+from energy_trading_pypeline.persistence.repository.repositories import (
     MarketAlertRepository,
     MarketSnapshotRepository,
     RawEnergyMarketEventRepository,

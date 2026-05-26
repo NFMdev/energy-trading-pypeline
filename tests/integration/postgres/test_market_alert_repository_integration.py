@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from energy_trading_pypeline.domain.alerts import AlertSeverity, AlertType, MarketAlert
-from energy_trading_pypeline.persistence.repositories import MarketAlertRepository
+from energy_trading_pypeline.persistence.repository.repositories import MarketAlertRepository
 
 pytestmark = pytest.mark.integration
 
