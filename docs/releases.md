@@ -78,3 +78,21 @@ The integration test suite validates that:
 - a valid event is processed transactionally into raw event, snapshot and alerts
 - duplicate events do not reprocess derived state
 - stale events are stored as raw history but do not update snapshots or generate alerts
+
+## v0.4.0 — Dead-letter handling & invalid event persistence
+
+### Included
+
+- Added `invalid_energy_market_events` table.
+- Added invalid event persistence for malformed or schema-invalid Kafka messages.
+- Added `InvalidEnergyMarketEvent`.
+- Added `InvalidEnergyMarketEventRepository`.
+- Added `InvalidEnergyMarketEventProcessor`.
+- Added integration tests for invalid event persistence.
+- Added handling for invalid payloads before Kafka offset commit.
+
+### Changed
+
+- Invalid Kafka messages are no longer only logged and committed.
+- Invalid messages are persisted before committing the Kafka offset.
+- `consume_raw_events` now routes validation/deserialization failures to invalid event persistence.

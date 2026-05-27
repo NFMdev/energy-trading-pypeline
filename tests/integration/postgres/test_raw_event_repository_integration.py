@@ -8,7 +8,9 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from energy_trading_pypeline.domain.energy_market_event import EnergyMarketEvent, QualityFlag
-from energy_trading_pypeline.persistence.repositories import RawEnergyMarketEventRepository
+from energy_trading_pypeline.persistence.repository.repositories import (
+    RawEnergyMarketEventRepository,
+)
 
 pytestmark = pytest.mark.integration
 

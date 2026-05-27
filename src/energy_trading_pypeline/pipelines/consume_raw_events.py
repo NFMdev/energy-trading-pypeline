@@ -1,4 +1,5 @@
 import argparse
+from json import JSONDecodeError
 
 from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
@@ -9,8 +10,11 @@ from energy_trading_pypeline.messaging.consumer import (
     KafkaConsumerConfig,
 )
 from energy_trading_pypeline.persistence.db import SessionLocal
-from energy_trading_pypeline.pipelines.enery_market_event_processor import (
+from energy_trading_pypeline.pipelines.core.energy_market_event_processor import (
     EnergyMarketEventProcessor,
+)
+from energy_trading_pypeline.pipelines.core.invalid_energy_market_event_processor import (
+    InvalidEnergyMarketEventProcessor,
 )
 
 
@@ -48,7 +52,10 @@ def main() -> None:
             group_id=settings.kafka_consumer_group,
         )
     )
-    processor = EnergyMarketEventProcessor(SessionLocal)
+    event_processor = EnergyMarketEventProcessor(SessionLocal)
+    invalid_event_processor = InvalidEnergyMarketEventProcessor(
+        session_factory=SessionLocal, consumer_group=settings.kafka_consumer_group
+    )
 
     consumer.subscribe()
     consumed_messages = 0
@@ -72,7 +79,7 @@ def main() -> None:
             try:
                 event = consumer.parse_message(message)
 
-                result = processor.process(event)
+                result = event_processor.process(event)
 
                 consumer.commit(message)
                 consumed_messages += 1
@@ -96,17 +103,8 @@ def main() -> None:
                         f"offset={message.offset()}"
                     )
 
-            except ValidationError as exc:
-                print(
-                    "Invalid event payload. "
-                    f"partition={message.partition()} "
-                    f"offset={message.offset()} "
-                    f"error={exc}"
-                )
-
-                # MVP decision:
-                # Commit invalid messages to avoid blocking the consumer forever.
-                # TODO: send invalid payloads to a dead-letter topic/table.
+            except (ValidationError, ValueError, JSONDecodeError) as exc:
+                invalid_event_processor.process(message, exc)
                 consumer.commit(message)
 
             except SQLAlchemyError as exc:

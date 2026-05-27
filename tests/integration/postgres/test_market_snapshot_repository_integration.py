@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from energy_trading_pypeline.domain.energy_market_event import EnergyMarketEvent, QualityFlag
 from energy_trading_pypeline.domain.market_snapshot import MarketSnapshot, calculate_snapshot
-from energy_trading_pypeline.persistence.repositories import MarketSnapshotRepository
+from energy_trading_pypeline.persistence.repository.repositories import MarketSnapshotRepository
 
 pytestmark = pytest.mark.integration
 

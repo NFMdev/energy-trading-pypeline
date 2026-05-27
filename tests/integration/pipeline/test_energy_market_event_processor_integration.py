@@ -8,7 +8,7 @@ from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from energy_trading_pypeline.domain.energy_market_event import EnergyMarketEvent, QualityFlag
-from energy_trading_pypeline.pipelines.enery_market_event_processor import (
+from energy_trading_pypeline.pipelines.core.energy_market_event_processor import (
     EnergyMarketEventProcessor,
 )
 
