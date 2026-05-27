@@ -1,7 +1,5 @@
-from typing import Any, cast
-
 import pytest
-from sqlalchemy import CursorResult, text
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from energy_trading_pypeline.domain.invalid_energy_market_event import InvalidEnergyMarketEvent
@@ -32,36 +30,35 @@ def test_save_invalid_message_inserts_row(session: Session) -> None:
 
     assert inserted is True
 
-    result = cast(
-        CursorResult[Any],
+    row = (
         session.execute(
             text(
                 """
-                SELECT
-                    topic,
-                    kafka_partition,
-                    kafka_offset,
-                    kafka_key,
-                    payload,
-                    payload_text,
-                    error_type,
-                    error_message,
-                    consumer_group
-                FROM invalid_energy_market_events
-                WHERE topic = :topic
-                    AND kafka_partition = :kafka_partition
-                    AND kafka_offset = :kafka_offset
-                """
+            SELECT
+                topic,
+                kafka_partition,
+                kafka_offset,
+                kafka_key,
+                payload,
+                payload_text,
+                error_type,
+                error_message,
+                consumer_group
+            FROM invalid_energy_market_events
+            WHERE topic = :topic
+                AND kafka_partition = :kafka_partition
+                AND kafka_offset = :kafka_offset
+            """
             ),
             {
                 "topic": event.topic,
                 "kafka_partition": event.kafka_partition,
                 "kafka_offset": event.kafka_offset,
             },
-        ),
+        )
+        .mappings()
+        .one()
     )
-
-    row = result.mappings().one()
 
     assert row["topic"] == "energy.market.raw.v1"
     assert row["kafka_partition"] == 0
@@ -97,11 +94,9 @@ def test_save_invalid_message_is_idempotent_by_kafka_position(session: Session) 
     assert first_insert is True
     assert second_insert is False
 
-    total = cast(
-        CursorResult[Any],
-        session.execute(
-            text(
-                """
+    total = session.execute(
+        text(
+            """
                 SELECT
                     COUNT(*) as total
                 FROM invalid_energy_market_events
@@ -109,13 +104,12 @@ def test_save_invalid_message_is_idempotent_by_kafka_position(session: Session) 
                     AND kafka_partition = :kafka_partition
                     AND kafka_offset = :kafka_offset
                 """
-            ),
-            {
-                "topic": event.topic,
-                "kafka_partition": event.kafka_partition,
-                "kafka_offset": event.kafka_offset,
-            },
         ),
+        {
+            "topic": event.topic,
+            "kafka_partition": event.kafka_partition,
+            "kafka_offset": event.kafka_offset,
+        },
     ).scalar_one()
 
     assert total == 1

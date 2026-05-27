@@ -67,7 +67,8 @@ check-all: lint typecheck test-all
 up:
 	docker compose up -d
 
-down: docker compose down
+down:
+	docker compose down
 
 restart: down up
 

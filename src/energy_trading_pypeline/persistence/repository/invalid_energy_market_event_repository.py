@@ -1,6 +1,4 @@
-from typing import Any, cast
-
-from sqlalchemy import CursorResult, text
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from energy_trading_pypeline.domain.invalid_energy_market_event import InvalidEnergyMarketEvent
@@ -38,22 +36,19 @@ class InvalidEnergyMarketEventRepository:
             """
         )
 
-        result = cast(
-            CursorResult[Any],
-            self._session.execute(
-                statement,
-                {
-                    "topic": invalid_event.topic,
-                    "kafka_partition": invalid_event.kafka_partition,
-                    "kafka_offset": invalid_event.kafka_offset,
-                    "kafka_key": invalid_event.kafka_key,
-                    "payload": invalid_event.payload,
-                    "payload_text": invalid_event.payload_text,
-                    "error_type": invalid_event.error_type,
-                    "error_message": invalid_event.error_message,
-                    "consumer_group": invalid_event.consumer_group,
-                },
-            ),
+        result = self._session.execute(
+            statement,
+            {
+                "topic": invalid_event.topic,
+                "kafka_partition": invalid_event.kafka_partition,
+                "kafka_offset": invalid_event.kafka_offset,
+                "kafka_key": invalid_event.kafka_key,
+                "payload": invalid_event.payload,
+                "payload_text": invalid_event.payload_text,
+                "error_type": invalid_event.error_type,
+                "error_message": invalid_event.error_message,
+                "consumer_group": invalid_event.consumer_group,
+            },
         )
 
         inserted_id = result.scalar_one_or_none()
