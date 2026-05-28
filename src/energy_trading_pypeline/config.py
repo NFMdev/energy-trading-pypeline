@@ -11,6 +11,8 @@ class Settings(BaseSettings):
 
     app_env: AppEnv = "local"
 
+    log_level: str = "INFO"
+
     database_host: str = "localhost"
     database_port: int = 5432
     database_name: str = "energy_pipeline"
@@ -25,6 +27,9 @@ class Settings(BaseSettings):
     kafka_consumer_group: str = "energy-market-ingestion-v1"
     generator_market_areas: str = "DK1,DK2,DE,SE3,NO2"
     generator_source: str = "energy-generator"
+
+    producer_interval_seconds: float = 0.5
+    producer_max_events: int | None = None
 
     @property
     def market_areas(self) -> list[str]:

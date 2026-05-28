@@ -1,4 +1,5 @@
 import argparse
+import logging
 from json import JSONDecodeError
 
 from pydantic import ValidationError
@@ -9,6 +10,7 @@ from energy_trading_pypeline.messaging.consumer import (
     EnergyMarketEventConsumer,
     KafkaConsumerConfig,
 )
+from energy_trading_pypeline.observability.logging import configure_logging
 from energy_trading_pypeline.persistence.db import SessionLocal
 from energy_trading_pypeline.pipelines.core.energy_market_event_processor import (
     EnergyMarketEventProcessor,
@@ -16,6 +18,8 @@ from energy_trading_pypeline.pipelines.core.energy_market_event_processor import
 from energy_trading_pypeline.pipelines.core.invalid_energy_market_event_processor import (
     InvalidEnergyMarketEventProcessor,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def parse_args() -> argparse.Namespace:
@@ -44,6 +48,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     settings = get_settings()
+    configure_logging(settings.log_level)
 
     consumer = EnergyMarketEventConsumer(
         KafkaConsumerConfig(
@@ -60,10 +65,9 @@ def main() -> None:
     consumer.subscribe()
     consumed_messages = 0
 
-    print(
-        "Started consumer "
-        f"topic={settings.kafka_raw_topic} "
-        f"group_id={settings.kafka_consumer_group}"
+    logger.info(
+        "Starting raw energy market consumer",
+        extra={"topic": settings.kafka_raw_topic, "group_id": settings.kafka_consumer_group},
     )
 
     try:
@@ -78,51 +82,116 @@ def main() -> None:
 
             try:
                 event = consumer.parse_message(message)
-
                 result = event_processor.process(event)
+
+                if result.duplicate_event:
+                    logger.info(
+                        "Duplicate energy market event skipped",
+                        extra={
+                            "event_id": str(event.event_id),
+                            "market_area": event.market_area,
+                            "timestamp": event.timestamp.isoformat(),
+                        },
+                    )
+                elif result.stale_event:
+                    logger.info(
+                        "Stale energy market event persisted without snapshot update",
+                        extra={
+                            "event_id": str(event.event_id),
+                            "market_area": event.market_area,
+                            "timestamp": event.timestamp.isoformat(),
+                        },
+                    )
+                else:
+                    logger.info(
+                        "Energy market event processed",
+                        extra={
+                            "event_id": str(event.event_id),
+                            "market_area": event.market_area,
+                            "timestamp": event.timestamp.isoformat(),
+                            "inserted_alerts": result.inserted_alerts,
+                        },
+                    )
 
                 consumer.commit(message)
                 consumed_messages += 1
 
-                if result.raw_event_inserted:
-                    print(
-                        "Persisted event "
-                        f"event_id={event.event_id} "
-                        f"market_area={event.market_area} "
-                        f"snapshot_updated={result.snapshot_updated} "
-                        f"inserted_alerts={result.inserted_alerts} "
-                        f"partition={message.partition()} "
-                        f"offset={message.offset()}"
-                    )
-                else:
-                    print(
-                        "Skipped duplicate event "
-                        f"event_id={event.event_id} "
-                        f"market_area={event.market_area} "
-                        f"partition={message.partition()} "
-                        f"offset={message.offset()}"
-                    )
+                logger.info(
+                    "Kafka message committed",
+                    extra={
+                        "topic": message.topic(),
+                        "partition": message.partition(),
+                        "offset": message.offset(),
+                    },
+                )
 
             except (ValidationError, ValueError, JSONDecodeError) as exc:
-                invalid_event_processor.process(message, exc)
+                logger.warning(
+                    "Invalid Kafka message received",
+                    extra={
+                        "topic": message.topic(),
+                        "partition": message.partition(),
+                        "offset": message.offset(),
+                        "error_type": type(exc).__name__,
+                    },
+                )
+
+                inserted = invalid_event_processor.process(message, exc)
+
+                logger.info(
+                    "Invalid Kafka message persisted",
+                    extra={
+                        "topic": message.topic(),
+                        "partition": message.partition(),
+                        "offset": message.offset(),
+                        "inserted": inserted,
+                        "error_type": type(exc).__name__,
+                    },
+                )
+
                 consumer.commit(message)
 
+                logger.info(
+                    "Kafka message committed",
+                    extra={
+                        "topic": message.topic(),
+                        "partition": message.partition(),
+                        "offset": message.offset(),
+                    },
+                )
+
             except SQLAlchemyError as exc:
-                print(
-                    "Database error while processing message. "
-                    f"partition={message.partition()} "
-                    f"offset={message.offset()} "
-                    f"error={exc}"
+                logger.exception(
+                    "Database error while processing message.",
+                    extra={
+                        "topic": message.topic(),
+                        "partition": message.partition(),
+                        "offset": message.offset(),
+                        "error": exc,
+                    },
+                )
+
+                raise
+
+            except Exception as exc:
+                logger.exception(
+                    "Unexpected error while processing Kafka message.",
+                    extra={
+                        "topic": message.topic(),
+                        "partition": message.partition(),
+                        "offset": message.offset(),
+                        "error": exc,
+                    },
                 )
 
                 raise
 
     except KeyboardInterrupt:
-        print("Stopping consumer...")
+        logger.info("Stopping consumer...")
 
     finally:
         consumer.close()
-        print(f"Consumer stopped. consumed_messages={consumed_messages}")
+        logger.info(f"Consumer stopped. consumed_messages={consumed_messages}")
 
 
 if __name__ == "__main__":
