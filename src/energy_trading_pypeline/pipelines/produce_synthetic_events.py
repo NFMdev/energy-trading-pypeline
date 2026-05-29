@@ -13,8 +13,10 @@ from energy_trading_pypeline.messaging.producer import (
 )
 from energy_trading_pypeline.messaging.topic_admin import KafkaTopicConfig, check_topic_exists
 from energy_trading_pypeline.observability.logging import configure_logging
+from energy_trading_pypeline.observability.runtime_stats import ProducerRuntimeStats
 
 logger = logging.getLogger(__name__)
+stats = ProducerRuntimeStats()
 _running = True
 
 
@@ -54,40 +56,48 @@ def main() -> None:
         )
     )
 
-    produced_events = 0
-
     try:
         while _running:
             if (
                 settings.producer_max_events is not None
-                and produced_events >= settings.producer_max_events
+                and stats.produced_events >= settings.producer_max_events
             ):
                 logger.info(
                     "Producer reached configured max events.",
-                    extra={"produced_events": produced_events},
+                    extra={"produced_events": stats.produced_events},
                 )
                 break
 
-            event = generator.generate_energy_market_event()
-            producer.produce(event)
+            try:
+                event = generator.generate_energy_market_event()
+                producer.produce(event)
+                stats.record_produced_event()
 
-            produced_events += 1
+                logger.info(
+                    "Energy market event produced",
+                    extra={
+                        "event_id": str(event.event_id),
+                        "market_area": event.market_area,
+                        "timestamp": event.timestamp.isoformat(),
+                        "produced_events": stats.produced_events,
+                    },
+                )
 
-            logger.info(
-                "Energy market event produced",
-                extra={
-                    "event_id": str(event.event_id),
-                    "market_area": event.market_area,
-                    "timestamp": event.timestamp.isoformat(),
-                    "produced_events": produced_events,
-                },
-            )
+                time.sleep(settings.producer_interval_seconds)
 
-            time.sleep(settings.producer_interval_seconds)
+            except Exception:
+                stats.record_publish_failure()
+                logger.exception("Failed to publish energy market event.")
 
     finally:
         producer.flush()
-        logger.info("Energy market producer stopped.", extra={"produced_events": produced_events})
+        logger.info(
+            "Energy market producer stopped.",
+            extra={
+                "produced_events": stats.produced_events,
+                "publish_failures": stats.publish_failures,
+            },
+        )
 
 
 if __name__ == "__main__":

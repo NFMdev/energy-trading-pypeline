@@ -11,6 +11,7 @@ from energy_trading_pypeline.messaging.consumer import (
     KafkaConsumerConfig,
 )
 from energy_trading_pypeline.observability.logging import configure_logging
+from energy_trading_pypeline.observability.runtime_stats import ConsumerRuntimeStats
 from energy_trading_pypeline.persistence.db import SessionLocal
 from energy_trading_pypeline.pipelines.core.energy_market_event_processor import (
     EnergyMarketEventProcessor,
@@ -20,6 +21,7 @@ from energy_trading_pypeline.pipelines.core.invalid_energy_market_event_processo
 )
 
 logger = logging.getLogger(__name__)
+stats = ConsumerRuntimeStats()
 
 
 def parse_args() -> argparse.Namespace:
@@ -63,8 +65,6 @@ def main() -> None:
     )
 
     consumer.subscribe()
-    consumed_messages = 0
-
     logger.info(
         "Starting raw energy market consumer",
         extra={"topic": settings.kafka_raw_topic, "group_id": settings.kafka_consumer_group},
@@ -72,7 +72,7 @@ def main() -> None:
 
     try:
         while True:
-            if args.max_messages > 0 and consumed_messages >= args.max_messages:
+            if args.max_messages > 0 and stats.committed_messages >= args.max_messages:
                 break
 
             message = consumer.poll(timeout_seconds=args.poll_timeout_seconds)
@@ -85,6 +85,7 @@ def main() -> None:
                 result = event_processor.process(event)
 
                 if result.duplicate_event:
+                    stats.record_duplicate_event()
                     logger.info(
                         "Duplicate energy market event skipped",
                         extra={
@@ -94,6 +95,7 @@ def main() -> None:
                         },
                     )
                 elif result.stale_event:
+                    stats.record_stale_event()
                     logger.info(
                         "Stale energy market event persisted without snapshot update",
                         extra={
@@ -103,6 +105,7 @@ def main() -> None:
                         },
                     )
                 else:
+                    stats.record_valid_event_processed(inserted_alerts=result.inserted_alerts)
                     logger.info(
                         "Energy market event processed",
                         extra={
@@ -114,7 +117,7 @@ def main() -> None:
                     )
 
                 consumer.commit(message)
-                consumed_messages += 1
+                stats.record_committed_messages()
 
                 logger.info(
                     "Kafka message committed",
@@ -138,18 +141,22 @@ def main() -> None:
 
                 inserted = invalid_event_processor.process(message, exc)
 
-                logger.info(
-                    "Invalid Kafka message persisted",
-                    extra={
-                        "topic": message.topic(),
-                        "partition": message.partition(),
-                        "offset": message.offset(),
-                        "inserted": inserted,
-                        "error_type": type(exc).__name__,
-                    },
-                )
+                if inserted:
+                    stats.record_invalid_event_persisted()
+
+                    logger.warning(
+                        "Invalid Kafka message persisted",
+                        extra={
+                            "topic": message.topic(),
+                            "partition": message.partition(),
+                            "offset": message.offset(),
+                            "inserted": inserted,
+                            "error_type": type(exc).__name__,
+                        },
+                    )
 
                 consumer.commit(message)
+                stats.record_committed_messages()
 
                 logger.info(
                     "Kafka message committed",
@@ -161,6 +168,7 @@ def main() -> None:
                 )
 
             except SQLAlchemyError as exc:
+                stats.record_processing_failure()
                 logger.exception(
                     "Database error while processing message.",
                     extra={
@@ -174,6 +182,7 @@ def main() -> None:
                 raise
 
             except Exception as exc:
+                stats.record_processing_failure()
                 logger.exception(
                     "Unexpected error while processing Kafka message.",
                     extra={
@@ -191,7 +200,18 @@ def main() -> None:
 
     finally:
         consumer.close()
-        logger.info(f"Consumer stopped. consumed_messages={consumed_messages}")
+        logger.info(
+            "Energy market consumer stopped.",
+            extra={
+                "valid_events_processed": stats.valid_events_processed,
+                "duplicate_events": stats.duplicate_events,
+                "stale_events": stats.stale_events,
+                "invalid_events_persisted": stats.invalid_events_persisted,
+                "generated_alerts": stats.generated_alerts,
+                "processing_failures": stats.processing_failures,
+                "committed_messages": stats.committed_messages,
+            },
+        )
 
 
 if __name__ == "__main__":
