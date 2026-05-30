@@ -1,4 +1,5 @@
 import argparse
+import logging
 from json import JSONDecodeError
 
 from pydantic import ValidationError
@@ -9,6 +10,9 @@ from energy_trading_pypeline.messaging.consumer import (
     EnergyMarketEventConsumer,
     KafkaConsumerConfig,
 )
+from energy_trading_pypeline.observability.logging import configure_logging
+from energy_trading_pypeline.observability.periodic_summary import EventCountSummaryReporter
+from energy_trading_pypeline.observability.runtime_stats import ConsumerRuntimeStats
 from energy_trading_pypeline.persistence.db import SessionLocal
 from energy_trading_pypeline.pipelines.core.energy_market_event_processor import (
     EnergyMarketEventProcessor,
@@ -16,6 +20,9 @@ from energy_trading_pypeline.pipelines.core.energy_market_event_processor import
 from energy_trading_pypeline.pipelines.core.invalid_energy_market_event_processor import (
     InvalidEnergyMarketEventProcessor,
 )
+
+logger = logging.getLogger(__name__)
+stats = ConsumerRuntimeStats()
 
 
 def parse_args() -> argparse.Namespace:
@@ -44,6 +51,11 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     settings = get_settings()
+    configure_logging(settings.log_level)
+
+    summary_reporter = EventCountSummaryReporter(
+        interval_events=settings.operational_summary_interval_events
+    )
 
     consumer = EnergyMarketEventConsumer(
         KafkaConsumerConfig(
@@ -58,17 +70,14 @@ def main() -> None:
     )
 
     consumer.subscribe()
-    consumed_messages = 0
-
-    print(
-        "Started consumer "
-        f"topic={settings.kafka_raw_topic} "
-        f"group_id={settings.kafka_consumer_group}"
+    logger.info(
+        "Starting raw energy market consumer",
+        extra={"topic": settings.kafka_raw_topic, "group_id": settings.kafka_consumer_group},
     )
 
     try:
         while True:
-            if args.max_messages > 0 and consumed_messages >= args.max_messages:
+            if args.max_messages > 0 and stats.committed_messages >= args.max_messages:
                 break
 
             message = consumer.poll(timeout_seconds=args.poll_timeout_seconds)
@@ -78,51 +87,156 @@ def main() -> None:
 
             try:
                 event = consumer.parse_message(message)
-
                 result = event_processor.process(event)
 
-                consumer.commit(message)
-                consumed_messages += 1
-
-                if result.raw_event_inserted:
-                    print(
-                        "Persisted event "
-                        f"event_id={event.event_id} "
-                        f"market_area={event.market_area} "
-                        f"snapshot_updated={result.snapshot_updated} "
-                        f"inserted_alerts={result.inserted_alerts} "
-                        f"partition={message.partition()} "
-                        f"offset={message.offset()}"
+                if result.duplicate_event:
+                    stats.record_duplicate_event()
+                    logger.info(
+                        "Duplicate energy market event skipped",
+                        extra={
+                            "event_id": str(event.event_id),
+                            "market_area": event.market_area,
+                            "timestamp": event.timestamp.isoformat(),
+                        },
+                    )
+                elif result.stale_event:
+                    stats.record_stale_event()
+                    logger.info(
+                        "Stale energy market event persisted without snapshot update",
+                        extra={
+                            "event_id": str(event.event_id),
+                            "market_area": event.market_area,
+                            "timestamp": event.timestamp.isoformat(),
+                        },
                     )
                 else:
-                    print(
-                        "Skipped duplicate event "
-                        f"event_id={event.event_id} "
-                        f"market_area={event.market_area} "
-                        f"partition={message.partition()} "
-                        f"offset={message.offset()}"
+                    stats.record_valid_event_processed(inserted_alerts=result.inserted_alerts)
+                    logger.info(
+                        "Energy market event processed",
+                        extra={
+                            "event_id": str(event.event_id),
+                            "market_area": event.market_area,
+                            "timestamp": event.timestamp.isoformat(),
+                            "inserted_alerts": result.inserted_alerts,
+                        },
                     )
 
-            except (ValidationError, ValueError, JSONDecodeError) as exc:
-                invalid_event_processor.process(message, exc)
                 consumer.commit(message)
+                stats.record_committed_messages()
+
+                logger.info(
+                    "Kafka message committed",
+                    extra={
+                        "topic": message.topic(),
+                        "partition": message.partition(),
+                        "offset": message.offset(),
+                    },
+                )
+                _log_consumer_summary_if_needed(summary_reporter)
+
+            except (ValidationError, ValueError, JSONDecodeError) as exc:
+                logger.warning(
+                    "Invalid Kafka message received",
+                    extra={
+                        "topic": message.topic(),
+                        "partition": message.partition(),
+                        "offset": message.offset(),
+                        "error_type": type(exc).__name__,
+                    },
+                )
+
+                inserted = invalid_event_processor.process(message, exc)
+
+                if inserted:
+                    stats.record_invalid_event_persisted()
+
+                    logger.warning(
+                        "Invalid Kafka message persisted",
+                        extra={
+                            "topic": message.topic(),
+                            "partition": message.partition(),
+                            "offset": message.offset(),
+                            "inserted": inserted,
+                            "error_type": type(exc).__name__,
+                        },
+                    )
+
+                consumer.commit(message)
+                stats.record_committed_messages()
+
+                logger.info(
+                    "Kafka message committed",
+                    extra={
+                        "topic": message.topic(),
+                        "partition": message.partition(),
+                        "offset": message.offset(),
+                    },
+                )
+                _log_consumer_summary_if_needed(summary_reporter)
 
             except SQLAlchemyError as exc:
-                print(
-                    "Database error while processing message. "
-                    f"partition={message.partition()} "
-                    f"offset={message.offset()} "
-                    f"error={exc}"
+                stats.record_processing_failure()
+                logger.exception(
+                    "Database error while processing message.",
+                    extra={
+                        "topic": message.topic(),
+                        "partition": message.partition(),
+                        "offset": message.offset(),
+                        "error": exc,
+                    },
+                )
+
+                raise
+
+            except Exception as exc:
+                stats.record_processing_failure()
+                logger.exception(
+                    "Unexpected error while processing Kafka message.",
+                    extra={
+                        "topic": message.topic(),
+                        "partition": message.partition(),
+                        "offset": message.offset(),
+                        "error": exc,
+                    },
                 )
 
                 raise
 
     except KeyboardInterrupt:
-        print("Stopping consumer...")
+        logger.info("Stopping consumer...")
 
     finally:
         consumer.close()
-        print(f"Consumer stopped. consumed_messages={consumed_messages}")
+        logger.info(
+            "Energy market consumer stopped.",
+            extra={
+                "valid_events_processed": stats.valid_events_processed,
+                "duplicate_events": stats.duplicate_events,
+                "stale_events": stats.stale_events,
+                "invalid_events_persisted": stats.invalid_events_persisted,
+                "generated_alerts": stats.generated_alerts,
+                "processing_failures": stats.processing_failures,
+                "committed_messages": stats.committed_messages,
+            },
+        )
+
+
+def _log_consumer_summary_if_needed(summary_reporter: EventCountSummaryReporter) -> None:
+    if not summary_reporter.should_report(stats.committed_messages):
+        return
+
+    logger.info(
+        "Consumer operational summary",
+        extra={
+            "valid_events_processed": stats.valid_events_processed,
+            "duplicate_events": stats.duplicate_events,
+            "stale_events": stats.stale_events,
+            "invalid_events_persisted": stats.invalid_events_persisted,
+            "generated_alerts": stats.generated_alerts,
+            "processing_failures": stats.processing_failures,
+            "committed_messages": stats.committed_messages,
+        },
+    )
 
 
 if __name__ == "__main__":

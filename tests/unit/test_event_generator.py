@@ -2,13 +2,16 @@ from decimal import Decimal
 
 import pytest
 
-from energy_trading_pypeline.generator.event_generator import generate_energy_market_event
+from energy_trading_pypeline.generator.event_generator import (
+    EventGenerator,
+)
 
 pytestmark = pytest.mark.unit
 
 
 def test_generate_energy_market_event_returns_valid_event() -> None:
-    event = generate_energy_market_event()
+    generator = EventGenerator()
+    event = generator.generate_energy_market_event()
 
     assert event.market_area in {"DK1", "DK2", "DE", "SE3", "NO2"}
     assert event.source == "energy-generator"

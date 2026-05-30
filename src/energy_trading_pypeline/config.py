@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     app_env: AppEnv = "local"
+    log_level: str = "INFO"
+    operational_summary_interval_events: int = 100
 
     database_host: str = "localhost"
     database_port: int = 5432
@@ -25,6 +27,9 @@ class Settings(BaseSettings):
     kafka_consumer_group: str = "energy-market-ingestion-v1"
     generator_market_areas: str = "DK1,DK2,DE,SE3,NO2"
     generator_source: str = "energy-generator"
+
+    producer_interval_seconds: float = 0.5
+    producer_max_events: int | None = None
 
     @property
     def market_areas(self) -> list[str]:
