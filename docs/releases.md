@@ -96,3 +96,19 @@ The integration test suite validates that:
 - Invalid Kafka messages are no longer only logged and committed.
 - Invalid messages are persisted before committing the Kafka offset.
 - `consume_raw_events` now routes validation/deserialization failures to invalid event persistence.
+
+## v0.5.0 — Operational Observability MVP / Continuous Local Runtime
+
+### Added
+
+- Added centralized logging configuration.
+- Refactored synthetic producer to run continuously.
+- Added runtime stats for producer and consumer.
+- Added periodic operational summaries.
+- Added configurable producer interval and max event count.
+- Added configurable operational summary interval.
+
+### Changed
+
+- Producer and consumer can now be run continuously in local development.
+- Runtime logs now expose produced, processed, duplicate, stale, invalid, alert and commit outcomes.

@@ -11,6 +11,7 @@ from energy_trading_pypeline.messaging.consumer import (
     KafkaConsumerConfig,
 )
 from energy_trading_pypeline.observability.logging import configure_logging
+from energy_trading_pypeline.observability.periodic_summary import EventCountSummaryReporter
 from energy_trading_pypeline.observability.runtime_stats import ConsumerRuntimeStats
 from energy_trading_pypeline.persistence.db import SessionLocal
 from energy_trading_pypeline.pipelines.core.energy_market_event_processor import (
@@ -51,6 +52,10 @@ def main() -> None:
     args = parse_args()
     settings = get_settings()
     configure_logging(settings.log_level)
+
+    summary_reporter = EventCountSummaryReporter(
+        interval_events=settings.operational_summary_interval_events
+    )
 
     consumer = EnergyMarketEventConsumer(
         KafkaConsumerConfig(
@@ -127,6 +132,7 @@ def main() -> None:
                         "offset": message.offset(),
                     },
                 )
+                _log_consumer_summary_if_needed(summary_reporter)
 
             except (ValidationError, ValueError, JSONDecodeError) as exc:
                 logger.warning(
@@ -166,6 +172,7 @@ def main() -> None:
                         "offset": message.offset(),
                     },
                 )
+                _log_consumer_summary_if_needed(summary_reporter)
 
             except SQLAlchemyError as exc:
                 stats.record_processing_failure()
@@ -212,6 +219,24 @@ def main() -> None:
                 "committed_messages": stats.committed_messages,
             },
         )
+
+
+def _log_consumer_summary_if_needed(summary_reporter: EventCountSummaryReporter) -> None:
+    if not summary_reporter.should_report(stats.committed_messages):
+        return
+
+    logger.info(
+        "Consumer operational summary",
+        extra={
+            "valid_events_processed": stats.valid_events_processed,
+            "duplicate_events": stats.duplicate_events,
+            "stale_events": stats.stale_events,
+            "invalid_events_persisted": stats.invalid_events_persisted,
+            "generated_alerts": stats.generated_alerts,
+            "processing_failures": stats.processing_failures,
+            "committed_messages": stats.committed_messages,
+        },
+    )
 
 
 if __name__ == "__main__":

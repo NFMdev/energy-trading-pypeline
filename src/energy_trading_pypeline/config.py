@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     app_env: AppEnv = "local"
-
     log_level: str = "INFO"
+    operational_summary_interval_events: int = 100
 
     database_host: str = "localhost"
     database_port: int = 5432

@@ -13,6 +13,7 @@ from energy_trading_pypeline.messaging.producer import (
 )
 from energy_trading_pypeline.messaging.topic_admin import KafkaTopicConfig, check_topic_exists
 from energy_trading_pypeline.observability.logging import configure_logging
+from energy_trading_pypeline.observability.periodic_summary import EventCountSummaryReporter
 from energy_trading_pypeline.observability.runtime_stats import ProducerRuntimeStats
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,10 @@ def _request_shutdown(signum: int, frame: FrameType | None) -> None:
 def main() -> None:
     settings = get_settings()
     configure_logging(settings.log_level)
+
+    summary_reporter = EventCountSummaryReporter(
+        interval_events=settings.operational_summary_interval_events
+    )
 
     signal.signal(signal.SIGINT, _request_shutdown)
     signal.signal(signal.SIGTERM, _request_shutdown)
@@ -82,6 +87,15 @@ def main() -> None:
                         "produced_events": stats.produced_events,
                     },
                 )
+
+                if summary_reporter.should_report(stats.produced_events):
+                    logger.info(
+                        "Producer operational summary",
+                        extra={
+                            "produced_events": stats.produced_events,
+                            "publish_failures": stats.publish_failures,
+                        },
+                    )
 
                 time.sleep(settings.producer_interval_seconds)
 
