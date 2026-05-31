@@ -12,6 +12,7 @@ from energy_trading_pypeline.messaging.consumer import (
 )
 from energy_trading_pypeline.observability.logging import configure_logging
 from energy_trading_pypeline.observability.periodic_summary import EventCountSummaryReporter
+from energy_trading_pypeline.observability.prometheus_server import PrometheusMetricsServer
 from energy_trading_pypeline.observability.runtime_stats import ConsumerRuntimeStats
 from energy_trading_pypeline.persistence.db import SessionLocal
 from energy_trading_pypeline.pipelines.core.energy_market_event_processor import (
@@ -52,6 +53,11 @@ def main() -> None:
     args = parse_args()
     settings = get_settings()
     configure_logging(settings.log_level)
+    metrics_server = PrometheusMetricsServer.start(
+        enabled=settings.metrics_enabled,
+        host=settings.metrics_host,
+        port=settings.consumer_metrics_port,
+    )
 
     summary_reporter = EventCountSummaryReporter(
         interval_events=settings.operational_summary_interval_events
@@ -207,6 +213,7 @@ def main() -> None:
 
     finally:
         consumer.close()
+        metrics_server.stop()
         logger.info(
             "Energy market consumer stopped.",
             extra={

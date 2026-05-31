@@ -14,6 +14,7 @@ from energy_trading_pypeline.messaging.producer import (
 from energy_trading_pypeline.messaging.topic_admin import KafkaTopicConfig, check_topic_exists
 from energy_trading_pypeline.observability.logging import configure_logging
 from energy_trading_pypeline.observability.periodic_summary import EventCountSummaryReporter
+from energy_trading_pypeline.observability.prometheus_server import PrometheusMetricsServer
 from energy_trading_pypeline.observability.runtime_stats import ProducerRuntimeStats
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,11 @@ def _request_shutdown(signum: int, frame: FrameType | None) -> None:
 def main() -> None:
     settings = get_settings()
     configure_logging(settings.log_level)
+    metrics_server = PrometheusMetricsServer.start(
+        enabled=settings.metrics_enabled,
+        host=settings.metrics_host,
+        port=settings.producer_metrics_port,
+    )
 
     summary_reporter = EventCountSummaryReporter(
         interval_events=settings.operational_summary_interval_events
@@ -105,6 +111,7 @@ def main() -> None:
 
     finally:
         producer.flush()
+        metrics_server.stop()
         logger.info(
             "Energy market producer stopped.",
             extra={
