@@ -12,7 +12,9 @@ from energy_trading_pypeline.messaging.consumer import (
 )
 from energy_trading_pypeline.observability.logging import configure_logging
 from energy_trading_pypeline.observability.periodic_summary import EventCountSummaryReporter
-from energy_trading_pypeline.observability.prometheus_server import PrometheusMetricsServer
+from energy_trading_pypeline.observability.prometheus.prometheus_server import (
+    PrometheusMetricsServer,
+)
 from energy_trading_pypeline.observability.runtime_stats import ConsumerRuntimeStats
 from energy_trading_pypeline.persistence.db import SessionLocal
 from energy_trading_pypeline.pipelines.core.energy_market_event_processor import (
