@@ -14,6 +14,12 @@ from energy_trading_pypeline.messaging.producer import (
 from energy_trading_pypeline.messaging.topic_admin import KafkaTopicConfig, check_topic_exists
 from energy_trading_pypeline.observability.logging import configure_logging
 from energy_trading_pypeline.observability.periodic_summary import EventCountSummaryReporter
+from energy_trading_pypeline.observability.prometheus.producer_metrics import (
+    create_producer_metrics,
+)
+from energy_trading_pypeline.observability.prometheus.prometheus_server import (
+    PrometheusMetricsServer,
+)
 from energy_trading_pypeline.observability.runtime_stats import ProducerRuntimeStats
 
 logger = logging.getLogger(__name__)
@@ -34,6 +40,14 @@ def _request_shutdown(signum: int, frame: FrameType | None) -> None:
 def main() -> None:
     settings = get_settings()
     configure_logging(settings.log_level)
+
+    """ PROMETHEUS METRICS """
+    metrics_server = PrometheusMetricsServer.start(
+        enabled=settings.metrics_enabled,
+        host=settings.metrics_host,
+        port=settings.producer_metrics_port,
+    )
+    producer_metrics = create_producer_metrics(enabled=settings.metrics_enabled)
 
     summary_reporter = EventCountSummaryReporter(
         interval_events=settings.operational_summary_interval_events
@@ -75,8 +89,16 @@ def main() -> None:
 
             try:
                 event = generator.generate_energy_market_event()
+                publish_started_at = time.perf_counter()
+
                 producer.produce(event)
                 stats.record_produced_event()
+
+                publish_duration_seconds = time.perf_counter() - publish_started_at
+                producer_metrics.record_publish_success(
+                    market_area=event.market_area,
+                    duration_seconds=publish_duration_seconds,
+                )
 
                 logger.info(
                     "Energy market event produced",
@@ -99,12 +121,14 @@ def main() -> None:
 
                 time.sleep(settings.producer_interval_seconds)
 
-            except Exception:
+            except Exception as exc:
                 stats.record_publish_failure()
+                producer_metrics.record_publish_failure(error_type=type(exc).__name__)
                 logger.exception("Failed to publish energy market event.")
 
     finally:
         producer.flush()
+        metrics_server.stop()
         logger.info(
             "Energy market producer stopped.",
             extra={

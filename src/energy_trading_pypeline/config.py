@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     app_env: AppEnv = "local"
     log_level: str = "INFO"
     operational_summary_interval_events: int = 100
+    metrics_enabled: bool = True
+    metrics_host: str = "0.0.0.0"
+    producer_metrics_port: int = 9101
+    consumer_metrics_port: int = 9102
 
     database_host: str = "localhost"
     database_port: int = 5432

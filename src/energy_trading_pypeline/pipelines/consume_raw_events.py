@@ -1,5 +1,6 @@
 import argparse
 import logging
+import time
 from json import JSONDecodeError
 
 from pydantic import ValidationError
@@ -12,6 +13,12 @@ from energy_trading_pypeline.messaging.consumer import (
 )
 from energy_trading_pypeline.observability.logging import configure_logging
 from energy_trading_pypeline.observability.periodic_summary import EventCountSummaryReporter
+from energy_trading_pypeline.observability.prometheus.consumer_metrics import (
+    create_consumer_metrics,
+)
+from energy_trading_pypeline.observability.prometheus.prometheus_server import (
+    PrometheusMetricsServer,
+)
 from energy_trading_pypeline.observability.runtime_stats import ConsumerRuntimeStats
 from energy_trading_pypeline.persistence.db import SessionLocal
 from energy_trading_pypeline.pipelines.core.energy_market_event_processor import (
@@ -52,6 +59,13 @@ def main() -> None:
     args = parse_args()
     settings = get_settings()
     configure_logging(settings.log_level)
+    """ PROMETHEUS METRICS """
+    metrics_server = PrometheusMetricsServer.start(
+        enabled=settings.metrics_enabled,
+        host=settings.metrics_host,
+        port=settings.consumer_metrics_port,
+    )
+    consumer_metrics = create_consumer_metrics(enabled=settings.metrics_enabled)
 
     summary_reporter = EventCountSummaryReporter(
         interval_events=settings.operational_summary_interval_events
@@ -86,11 +100,17 @@ def main() -> None:
                 continue
 
             try:
+                processing_started_at = time.perf_counter()
                 event = consumer.parse_message(message)
                 result = event_processor.process(event)
+                processing_duration_seconds = time.perf_counter() - processing_started_at
 
                 if result.duplicate_event:
                     stats.record_duplicate_event()
+                    consumer_metrics.record_message_processed(
+                        outcome="duplicate",
+                        duration_seconds=processing_duration_seconds,
+                    )
                     logger.info(
                         "Duplicate energy market event skipped",
                         extra={
@@ -101,6 +121,10 @@ def main() -> None:
                     )
                 elif result.stale_event:
                     stats.record_stale_event()
+                    consumer_metrics.record_message_processed(
+                        outcome="stale",
+                        duration_seconds=processing_duration_seconds,
+                    )
                     logger.info(
                         "Stale energy market event persisted without snapshot update",
                         extra={
@@ -111,6 +135,11 @@ def main() -> None:
                     )
                 else:
                     stats.record_valid_event_processed(inserted_alerts=result.inserted_alerts)
+                    consumer_metrics.record_message_processed(
+                        outcome="valid",
+                        duration_seconds=processing_duration_seconds,
+                    )
+                    consumer_metrics.record_alerts_generated(count=result.inserted_alerts)
                     logger.info(
                         "Energy market event processed",
                         extra={
@@ -146,10 +175,14 @@ def main() -> None:
                 )
 
                 inserted = invalid_event_processor.process(message, exc)
+                consumer_metrics.record_message_processed(
+                    outcome="invalid",
+                    duration_seconds=processing_duration_seconds,
+                )
 
                 if inserted:
                     stats.record_invalid_event_persisted()
-
+                    consumer_metrics.record_invalid_event_persisted()
                     logger.warning(
                         "Invalid Kafka message persisted",
                         extra={
@@ -207,6 +240,7 @@ def main() -> None:
 
     finally:
         consumer.close()
+        metrics_server.stop()
         logger.info(
             "Energy market consumer stopped.",
             extra={
