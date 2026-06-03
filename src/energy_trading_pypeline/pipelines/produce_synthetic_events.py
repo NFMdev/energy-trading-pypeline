@@ -49,11 +49,6 @@ def main() -> None:
     )
     producer_metrics = create_producer_metrics(enabled=settings.metrics_enabled)
 
-    producer_metrics.record_publish_success(
-        market_area="DK1",
-        duration_seconds=0.001,
-    )
-
     summary_reporter = EventCountSummaryReporter(
         interval_events=settings.operational_summary_interval_events
     )

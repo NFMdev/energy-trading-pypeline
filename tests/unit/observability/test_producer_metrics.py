@@ -1,6 +1,7 @@
 import pytest
 from prometheus_client import CollectorRegistry, generate_latest
 
+from energy_trading_pypeline.observability import prometheus
 from energy_trading_pypeline.observability.prometheus.producer_metrics import (
     NoOpProducerMetrics,
     PrometheusProducerMetrics,
@@ -25,6 +26,26 @@ def test_create_producer_metrics_returns_noop_when_disabled() -> None:
     metrics = create_producer_metrics(enabled=False)
 
     assert isinstance(metrics, NoOpProducerMetrics)
+
+
+def test_create_producer_metrics_registers_metrics_with_default_registry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    registry = CollectorRegistry()
+    monkeypatch.setattr(prometheus.producer_metrics, "REGISTRY", registry)
+
+    metrics = create_producer_metrics(enabled=True)
+    metrics.record_publish_success(
+        market_area="DK1",
+        duration_seconds=0.123,
+        published_at_seconds=1_700_000_000.0,
+    )
+
+    output = generate_latest(registry).decode("utf-8")
+
+    assert (
+        'energy_trading_pypeline_producer_events_published_total{market_area="DK1"} 1.0' in output
+    )
 
 
 def test_prometheus_producer_metrics_records_publish_success() -> None:

@@ -4,7 +4,7 @@ import time
 from dataclasses import dataclass
 from typing import Protocol, Self
 
-from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
+from prometheus_client import REGISTRY, CollectorRegistry, Counter, Gauge, Histogram
 
 METRICS_NAMESPACE = "energy_trading_pypeline"
 PRODUCER_METRICS_SYBSYSTEM = "producer"
@@ -52,6 +52,8 @@ class PrometheusProducerMetrics:
         *,
         registry: CollectorRegistry | None = None,
     ) -> Self:
+        target_registry = REGISTRY if registry is None else registry
+
         return cls(
             _events_published=Counter(
                 name="events_published",
@@ -59,7 +61,7 @@ class PrometheusProducerMetrics:
                 labelnames=("market_area",),
                 namespace=METRICS_NAMESPACE,
                 subsystem=PRODUCER_METRICS_SYBSYSTEM,
-                registry=registry,
+                registry=target_registry,
             ),
             _publish_failures=Counter(
                 name="publish_failures",
@@ -67,14 +69,14 @@ class PrometheusProducerMetrics:
                 labelnames=("error_type",),
                 namespace=METRICS_NAMESPACE,
                 subsystem=PRODUCER_METRICS_SYBSYSTEM,
-                registry=registry,
+                registry=target_registry,
             ),
             _publish_duration=Histogram(
                 name="publish_duration_seconds",
                 documentation="Duration of producer publish operations in seconds",
                 namespace=METRICS_NAMESPACE,
                 subsystem=PRODUCER_METRICS_SYBSYSTEM,
-                registry=registry,
+                registry=target_registry,
                 buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0),
             ),
             _last_successful_publish_timestamp=Gauge(
@@ -82,7 +84,7 @@ class PrometheusProducerMetrics:
                 documentation="Unix timestamp of the last successfully published producer event.",
                 namespace=METRICS_NAMESPACE,
                 subsystem=PRODUCER_METRICS_SYBSYSTEM,
-                registry=registry,
+                registry=target_registry,
             ),
         )
 
